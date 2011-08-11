@@ -1,0 +1,11 @@
+echo Building with doc.md
+echo 
+doc.md app/ docs/
+echo 
+echo doc.md done!
+echo Building with dox
+echo 
+dox --title "Tali" app/* > docs/index.html
+echo 
+echo dox done!
+exit 0
