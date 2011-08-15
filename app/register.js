@@ -31,7 +31,7 @@ exports.register = function(username, password, email, cb) {
     } else {
       that.register._sql_register(username, 'text', password, email
       , function(err, info) {
-        cb(err, info.insertId)
+        return cb(err, info.insertId)
       })
     }
   })
@@ -41,7 +41,7 @@ exports.register._sql_checkUsername = function(username, cb) {
   db.query('SELECT username FROM tali_user WHERE username=?'
   , [username]
   , function(err, result) {
-    cb(err, result)
+    return cb(err, result)
   })
 }
 
@@ -51,6 +51,6 @@ exports.register._sql_register = function(username, password_type, password, ema
   + '(?,?,?,?,now(),now())'
   , [username,password_type,password,email]
   , function(err, info) {
-    cb(err, info)
+    return cb(err, info)
   })
 }
