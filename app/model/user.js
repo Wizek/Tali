@@ -1,4 +1,6 @@
 var crypto = require('crypto')
+  , paths = require('../paths')
+  , log = require('log')
 
 exports._sessionStore = []
 exports.session = function(search) {
@@ -69,20 +71,28 @@ exports.session = function(search) {
   return obj
 }
 
-exports.login = function (username, password, cb) {
+exports.login = function (username, password, envId, socketId, cb) {
   if (!username) {
     return cb('Felhasználónév megadás kötelező!')
   }
   if (!password) {
     return cb('Jelszó megadás kötelező!')
   }
-  var sid = crypto
+  /*var sid = crypto
     .createHash('sha1')
     .update(Math.random().toString())
-    .digest('base64')
-  this.login._sql_login(username, password, sid, function(err, result) {
+    .digest('base64')*/
+  
+  var that = this
+  this.login._sql_login(username, password, function(err, result) {
     if (!err) { // FIXME: use count()'s result instead!
-      return cb(null, sid)
+      var mySession = that.session(username)
+      if (mySession.get('envId') == envId) {
+        return cb('Nem jelentkezhetsz be kétszer! Előbb jelentkezz ki!')
+      }
+      mySession.set('envId', envId)
+      mySession.set('socketId', socketId)
+      return cb()
     }else{
       return cb('Nem megfelelő felhasználónév és jelszó kombináció!')
     }
@@ -109,7 +119,7 @@ exports.offlineFor = function(username, cb) {
   if (this.session(username).get('disconnectedAt')) {
     // How many seconds since the disconnecting
     offlineFor = Math.round(new Date().getTime() / 1000) -
-      Math.round(user.session('Juzer').get('disconnectedAt').getTime() / 1000)
+      Math.round(this.session(username).get('disconnectedAt').getTime() / 1000)
     return cb(null, offlineFor)
   } else if (this.session(username).exists) {
     return cb(null, -1)
@@ -136,24 +146,39 @@ exports.offlineFor._sql_getLastSeen = function(username, cb) {
   )
 }
 
-exports.tryResume = function(username, cookie, newSocketId) {
-  var session = this.session(username)
-  session.set('checkstring', 'abc')
-  if (this.session({cookie: cookie}).get('checkstring') == 'abc') {
-    session.set('socketId', newSocketId)
-    return true
-  } else {
-    log.error('Can' + "'" + 't resume session, username and cookie not the same')
-    return false
+exports.tryResume = function(envId, newSocketId, cb) {
+  var session = this.session({envId: envId})
+  if (!session.exists) {
+    return cb('Session doesn\'t exists!')
   }
+  var username = session.get('username')
+  if (!username) {
+    return cb('Session doesn\'t have a username!')
+  }
+  this.offlineFor(username, function(err, offlineFor) {
+    if (err) {
+      return cb(err)
+    }
+    // security is my passion :D
+    /*
+    if (offlineFor > 600) {
+      return cb('Session is over.')
+    }*/
+    if (offlineFor >= 0) {
+      session.set('socketId', newSocketId)
+      return cb(null, username)
+    }
+  })
 }
 
-exports.logout = function(username, cb) {
+exports.logout = function(envId, cb) {
   cb = cb || function() {}
+
+  username = this.session({envId: envId}).get('username')
   var self = this
   this.logout._sql_updateLastSeen(username, function(err, result) {
-    self.session('Juzer').kill()
-    cb()
+    self.session(username).kill()
+    return cb()
   })
 }
 

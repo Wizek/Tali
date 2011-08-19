@@ -1,46 +1,44 @@
-var main = require('../app/main.js')
+var user = require('../app/model/user.js')
 
 exports['User Login'] = function (test) {
-  test.expect(13)
+  test.expect(9)
 
-  test.equal(typeof main.login, 'function')
-  test.equal(typeof main.login._sql_login, 'function')
+  test.equal(typeof user.login, 'function')
+  test.equal(typeof user.login._sql_login, 'function')
 
-  main.login._sql_login = function(user, pass, sid, cb) {
-    if (user == 'Juzer' && pass == 'p4sSwrD') {
-      cb(null, []) // FIXME: use count()'s result instead!
-    }else{
-      cb('foobar')
+  user.login._sql_login = function(username, password, cb) {
+    if (username == 'Juzer' && password == 'p4sSwrD') {
+      return cb() // FIXME: use count()'s result instead!
+    } else {
+      return cb('Error')
     }
   }
-  main.login('', 'Password', function(err, token) {
-    test.equal(token, undefined)
+  var envId = '0a1b2c3d4e5f'
+  var socketId = 123456789012345678
+  user.login('', 'Password', envId, socketId, function(err) {
     test.equal(err, 'Felhasználónév megadás kötelező!')
   })
-  main.login('asdasd', '', function(err, token) {
-    test.equal(token, undefined)
+  user.login('asdasd', '', envId, socketId, function(err) {
     test.equal(err, 'Jelszó megadás kötelező!')
   })
-  main.login('Username', 'Password', function(err, token) {
-    test.equal(token, undefined)
+  user.login('Username', 'Password', envId, socketId, function(err) {
     test.equal(err, 'Nem megfelelő felhasználónév és jelszó kombináció!')
   })
-  main.login('Juzer', 'p4sSwrD', function(err, token) {
+  user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
     test.equal(err, null)
-    test.ok(token)
-    test.equal(token.length, 28)
+    test.equal(user.session('Juzer').get('envId'), envId)
+    test.equal(user.session('Juzer').get('socketId'), socketId)
   })
-  main.login('Juzer', 'p4sSwrD', function(err, token) {
+  user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
     test.equal(err, 'Nem jelentkezhetsz be kétszer! Előbb jelentkezz ki!')
-    test.equal(token, undefined)
   })
+  user.session('Juzer').kill()
   test.done()
 }
 
 exports['User Session Store'] = function(test) {
-  user = main // mi a fenéért main
-
   test.expect(7)
+
   test.equal(typeof user.session, 'function')
   var key = 'Session key'
   var value = 'Session value'
@@ -61,9 +59,8 @@ exports['User Session Store'] = function(test) {
 }
 
 exports['User Online'] = function(test) {
-  user = main // mi a fenéért main
-
   test.expect(3)
+
   test.equal(typeof user.offlineFor, 'function')
 
   user.offlineFor._sql_getLastSeen = function(username, cb) {
@@ -81,9 +78,8 @@ exports['User Online'] = function(test) {
 }
 
 exports['User Disconnect'] = function(test) {
-  user = main // mi a fenéért main
-  
   test.expect(4)
+
   test.equal(typeof user.disconnect, 'function')
   user.session('Juzer').init()
   user.disconnect('Juzer')
@@ -97,45 +93,53 @@ exports['User Disconnect'] = function(test) {
 }
 
 exports['User Try Resume'] = function(test) {
-  user = main // mi a fenéért main
-  
-  test.expect(3)
+  test.expect(5)
+
   test.equal(typeof user.tryResume, 'function')
-  user.login('Juzer', 'p4sSWrd', function() {
+
+  var envId = '0a1b2c3d4e5f'
+  var socketId = 123456789012345678
+  user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
+    test.equal(err, null)
     user.disconnect('Juzer')
-    user.session('Juzer').set('cookie','0a1b2c3d4e5f')
+    user.session('Juzer').set('envId','0a1b2c3d4e5f')
     user.session('Juzer').get('disconnectedAt').setMinutes(
       user.session('Juzer').get('disconnectedAt').getMinutes() - 3
     )
-    var cookie = user.session('Juzer').get('cookie')
+    var envId = user.session('Juzer').get('envId')
     // trying to resume the session after 3 minutes
-    var newSocketId = 1412415353545423
-    var resumeSuccessful = user.tryResume('Juzer', cookie, newSocketId)
-    test.equal(resumeSuccessful, true)
-    var resumeSuccessful = user.tryResume('Juzer', 'Hablaba', newSocketId)
-    test.equal(resumeSuccessful, false)
-    var resumeSuccessful = user.tryResume('asd', cookie, newSocketId)
-    test.equal(resumeSuccessful, false)
+    var newSocketId = 141241535354542324
+    user.tryResume('Hablaba', newSocketId, function(err, username) {
+      test.equal(err, 'Session doesn\'t exists!')
+    })
+    user.tryResume(envId, newSocketId, function(err, username) {
+      test.equal(username, 'Juzer')
+    })
     test.equal(user.session('Juzer').get('socketId'), newSocketId)
+    user.session('Juzer').kill()
+    test.done()
   })
-  test.done()
 }
 
 exports['User Logout'] = function(test) {
-  user = main // mi a fenéért main
+  test.expect(4)
 
-  test.expect(3)
   test.equal(typeof user.logout, 'function')
 
   user.logout._sql_updateLastSeen = function(username, cb) {
     return cb(null, {affectedRows: 1})
   }
 
-  main.logout('Juzer', function(err) {
+  var envId = '0a1b2c3d4e5f'
+  var socketId = 123456789012345678
+  user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
     test.equal(err, null)
+    user.logout(envId, function(err) {
+      test.equal(err, null)
+    })
+    user.offlineFor('Juzer', function(seconds) {
+      test.ok(seconds >= 0)
+    })
+    test.done()
   })
-  main.offlineFor('Juzer', function(seconds) {
-    test.ok(seconds >= 0)
-  })
-  test.done()
 }
