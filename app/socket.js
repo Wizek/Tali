@@ -2,35 +2,22 @@ var app = require('expressServer')
   , io = require('socket.io')
   , io = io.listen(app)
   , log = require('log')
+  , user = require('user')
 
 io.sockets.on('connection', function (socket) {
-  socket.on('set envId', function (envId, cb) {
-    socket.set('envId', envId, function() {
-      if (user.tryResume(envId, socket.id)) {
-        // resume successful
-        return cb()
-      } else {
-        // resume unsuccessful
-        return cb('not logged in')
-      }
+  socket.on('set envID', function (envID, cb) {
+    socket.set('envID', envID, function() {
+      user.tryResume(envID, socket.id, cb) 
     })
   })
   socket.on('login', function(username, password) {
-    socket.get('envId', function(err, envId) {
-      user.login(username, password, envId, socket.id, function(err) {
-        if (err) {
-          return cb(err)
-        } else {
-          return cb()
-        }
-      })
+    socket.get('envID', function(err, envID) {
+      user.login(username, password, envID, socket.id, cb)
     })
   })
   socket.on('logout', function() {
-    socket.get('envId', function(err, envId) {
-      user.logout(envId, function(err) {
-        return cb()
-      })
+    socket.get('envID', function(err, envID) {
+      user.logout(envID, cb)
     })
   })
 })
