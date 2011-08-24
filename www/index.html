@@ -6,28 +6,59 @@
   <script src="/lib/jquery.cookie.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    var g = {}
+    g.domReady = false
+    g.connReady = false
     getEnvID() // Just so we save those microseconds too!
     var socket = io.connect(location.origin)
     socket.on('connect', function () {
-      socket.emit('set envId', getEnvID().token, function(err) {
+      socket.emit('set envId', getEnvID().token, function(err, user) {
+        g.connReady = true
+        onConnectionReady()
+        if (user) {
+          loggedIn()
+        }
         // #16
       })
-      onConnectionReady()
     })
     $(onDomReady)
     function onDomReady () {
+      g.domReady = true
+      bothReady()
+      if (!g.connReady) {
+        $('#loginBox input').attr('disabled', true)
+      }
       //$('body').html(null)
-      $('#loginNow').click(function() {
-        console.log('asd')
+      $('#loginNow').click(login)
+      $('#loginBox').keypress(function(evt) {
+        // if Enter
+        if (evt.keyCode == 13) {
+          login()
+        }
+      })
+      function login () {
+        $('#loginNow').attr('disabled', true)
         var user = $('#username').val()
         var pass = $('#password').val()
         socket.emit('login', user, pass, function(err) {
-          console.log(err)
+          $('#loginNow').removeAttr('disabled')
+          if (err) {
+            alert(err)
+          }else{
+            loggedIn()
+          }
         })
-      })
+      }
     }
     function onConnectionReady () {
-      // body...
+      bothReady()
+    }
+    function bothReady () {
+      if (!g.domReady || !g.connReady) return
+      $('#loginBox input').removeAttr('disabled')
+    }
+    function loggedIn () {
+      $('form#loginBox').hide()
     }
     
     function getEnvID (argument) {
