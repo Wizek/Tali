@@ -3,7 +3,7 @@
  * Module dependencies
  */
 var log = require('log')
-  //, db = require('db')
+  , db = require('db')
   //, crypto = require('crypto')
 
 exports._sessionStore = []

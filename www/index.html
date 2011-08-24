@@ -9,7 +9,7 @@
     getEnvID() // Just so we save those microseconds too!
     var socket = io.connect(location.origin)
     socket.on('connect', function () {
-      socket.emit('set envID', getEnvID().token, function(err) {
+      socket.emit('set envId', getEnvID().token, function(err) {
         // #16
       })
       onConnectionReady()
