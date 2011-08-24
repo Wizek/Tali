@@ -6,7 +6,7 @@ var log = require('log')
   , db = require('db')
   //, crypto = require('crypto')
 
-exports._onlineStore = []
+exports._onlineStore = {}
 exports._sessionStore = []
 
 /**
@@ -126,7 +126,7 @@ exports.login = function (username, password, envId, socketId, cb) {
       mySession.set('socketId', socketId)
       mySession.set('userId', userId)
       that._onlineStore[username] = {
-        userid: userId
+        userId: userId
       , focus: 0
       }
       return cb(null, userId)
