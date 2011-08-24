@@ -10,12 +10,12 @@ io.sockets.on('connection', function (socket) {
       user.tryResume(envID, socket.id, cb) 
     })
   })
-  socket.on('login', function(username, password) {
+  socket.on('login', function(username, password, cb) {
     socket.get('envID', function(err, envID) {
       user.login(username, password, envID, socket.id, cb)
     })
   })
-  socket.on('logout', function() {
+  socket.on('logout', function(cb) {
     socket.get('envID', function(err, envID) {
       user.logout(envID, cb)
     })
