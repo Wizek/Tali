@@ -16,7 +16,6 @@ exports.getLevel = function(id, cb) {
   if (parseInt(id) != id)
     return cb('A parent ID szám kell hogy legyen!')
 
-
   this.getLevel._sql_getLevel(id, function(err, results) {
     if (err) {
       log.error(err)
