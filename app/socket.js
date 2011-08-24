@@ -7,7 +7,7 @@ var app = require('expressServer')
 io.sockets.on('connection', function (socket) {
   socket.on('set envId', function (envId, cb) {
     socket.set('envId', envId, function() {
-      user.tryResume(envId, socket.id, cb) 
+      user.tryResume(envId, socket.id, cb)
     })
   })
   socket.on('login', function(username, password, cb) {
