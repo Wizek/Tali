@@ -32,6 +32,7 @@ exports.getLevel._sql_getLevel = function(id, cb) {
         +' FROM tali_node'
         +' LEFT JOIN tali_node_hierarchy hierarchy ON hierarchy.child_id=tali_node.id'
         +' WHERE hierarchy.parent_id=' + id
+        +' ORDER BY hierarchy.position'
   , function(err, results) {
       return cb(err, results)
     }
