@@ -1,3 +1,5 @@
+global.debug = true
+
 var paths = require('../../app/paths')
   , user = require('../../app/model/user')
 
