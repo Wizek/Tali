@@ -111,7 +111,10 @@ exports.login = function (username, password, envId, socketId, cb) {
   
   var that = this
   this.login._sql_login(username, password, function(err, result) {
-    if (!err) { // FIXME: use count()'s result instead!
+    if (err)
+      return cb(err)
+    
+    if (parseInt(result[0].count) > 0) {
       var mySession = that.session(username)
       if (mySession.get('envId') == envId) {
         return cb('Nem jelentkezhetsz be kétszer! Előbb jelentkezz ki!')
@@ -119,14 +122,14 @@ exports.login = function (username, password, envId, socketId, cb) {
       mySession.set('envId', envId)
       mySession.set('socketId', socketId)
       return cb()
-    }else{
+    } else {
       return cb('Nem megfelelő felhasználónév és jelszó kombináció!')
     }
   })
 }
 
 exports.login._sql_login = function(username, password, cb) {
-  db.query('SELECT count(username) FROM tali_user WHERE username=? AND password=?'
+  db.query('SELECT count(username) AS count FROM tali_user WHERE username=? AND password=?'
   , [username, password]
   , function(err, result) {
       return cb(err, result)

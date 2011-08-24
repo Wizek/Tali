@@ -46,9 +46,9 @@ exports['User Login'] = function (test) {
   
   user.login._sql_login = function(username, password, cb) {
     if (username == 'Juzer' && password == 'p4sSwrD') {
-      return cb() // FIXME: use count()'s result instead!
+      return cb(null, [{count: 1}])
     } else {
-      return cb('Error')
+      return cb(null, [{count: 0}])
     }
   }
   var envId = '0a1b2c3d4e5f'
