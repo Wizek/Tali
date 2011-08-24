@@ -1,8 +1,18 @@
-var crypto = require('crypto')
-  , paths = require('../paths')
-  , log = require('log')
+
+/*
+ * Module dependencies
+ */
+var log = require('log')
+  //, db = require('db')
+  //, crypto = require('crypto')
 
 exports._sessionStore = []
+
+/*
+ * Session
+ * @param search {object} String (for username) or any object
+ * @return {object} with functions .init(), .get(), .set(), .kill()
+ */
 exports.session = function(search) {
   var foundUser = ''
   if (!search) {
@@ -71,13 +81,29 @@ exports.session = function(search) {
   return obj
 }
 
+/*
+ * User login
+ * @param username {String}
+ * @param password {String} Password unhashed
+ * @param envId {String}
+ * @param socketId {Number}
+ * @param callback {function} (err)
+ */
 exports.login = function (username, password, envId, socketId, cb) {
-  if (!username) {
-    return cb('Felhasználónév megadás kötelező!')
-  }
-  if (!password) {
-    return cb('Jelszó megadás kötelező!')
-  }
+  cb = cb || function() {}
+  if (typeof username != 'string')
+    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+  
+  if (typeof password != 'string')
+    return cb('A jelszónak egy Stringnek kell lennie!')
+  
+  if (typeof envId != 'string')
+    return cb('Az envId-nek Stringnek kell lennie!')
+  
+  if (typeof socketId != 'number')
+    return cb('A socketId-nek Number-nek kell lennie!')
+  
+  // TODO hash
   /*var sid = crypto
     .createHash('sha1')
     .update(Math.random().toString())
@@ -108,14 +134,29 @@ exports.login._sql_login = function(username, password, cb) {
   )
 }
 
-exports.disconnect = function(username, cb) {
+/*
+ * User disconnect
+ * @param socketId {String}
+ * @param callback {function} (err)
+ */
+exports.disconnect = function(socketId, cb) {
   cb = cb || function() {}
-  this.session(username).set('disconnectedAt', new Date())
+  if (typeof socketId != 'number')
+    return cb('A socketId-nek Number-nek kell lennie!')
+  
+  this.session({socketId: socketId}).set('disconnectedAt', new Date())
   return cb()
 }
-
+/*
+ * How many seconds since the user is offline? -1 if still online
+ * @param username {String}
+ * @param callback {function} (err, offlineFor)
+ */
 exports.offlineFor = function(username, cb) {
   cb = cb || function() {}
+  if (typeof username != 'string')
+    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+  
   if (this.session(username).get('disconnectedAt')) {
     // How many seconds since the disconnecting
     offlineFor = Math.round(new Date().getTime() / 1000) -
@@ -146,7 +187,20 @@ exports.offlineFor._sql_getLastSeen = function(username, cb) {
   )
 }
 
+/*
+ * Try to resume to a session, which was started from this envId
+ * @param envId {String}
+ * @param newSocketId {Number} The current (new) socketId
+ * @param callback {function} (err, username)
+ */
 exports.tryResume = function(envId, newSocketId, cb) {
+  cb = cb || function() {}
+  if (typeof envId != 'string')
+    return cb('Az envId-nek Stringnek kell lennie!')
+  
+  if (typeof newSocketId != 'number')
+    return cb('A socketId-nek Number-nek kell lennie!')
+  
   var session = this.session({envId: envId})
   if (!session.exists) {
     return cb('Session doesn\'t exists!')
@@ -171,8 +225,15 @@ exports.tryResume = function(envId, newSocketId, cb) {
   })
 }
 
+/*
+ * User logout
+ * @param envId {String}
+ * @param callback {function} (err)
+ */
 exports.logout = function(envId, cb) {
   cb = cb || function() {}
+  if (typeof envId != 'string')
+    return cb('Az envId-nek Stringnek kell lennie!')
 
   username = this.session({envId: envId}).get('username')
   var self = this
@@ -191,9 +252,16 @@ exports.logout._sql_updateLastSeen = function(username, cb) {
   )
 }
 
-exports.register = function(username, password, email, cb) {
+/* User register
+ * @param username {String}
+ * @param password {String} Password unhashed
+ * @param email {String}
+ * @param callback {function} (err, insertId)
+ */
+/*exports.register = function(username, password, email, cb) {
   cb = cb || function() {}
-  if (!username) {
+
+  if (typeof username != 'string')
     return cb('A felhasználónév megadása kötelező!')
   }
   if (!password) {
@@ -247,3 +315,4 @@ exports.register._sql_register = function(username, password_type, password, ema
     return cb(err, info)
   })
 }
+*/
