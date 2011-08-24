@@ -1,5 +1,5 @@
 
-/*
+/**
  * Module dependencies
  */
 var log = require('log')
@@ -8,7 +8,7 @@ var log = require('log')
 
 exports._sessionStore = []
 
-/*
+/**
  * Session
  * @param search {object} String (for username) or any object
  * @return {object} with functions .init(), .get(), .set(), .kill()
@@ -81,13 +81,13 @@ exports.session = function(search) {
   return obj
 }
 
-/*
+/**
  * User login
  * @param username {String}
  * @param password {String} Password unhashed
  * @param envId {String}
  * @param socketId {Number}
- * @param callback {function} (err)
+ * @param cb {function} cb(err)
  */
 exports.login = function (username, password, envId, socketId, cb) {
   cb = cb || function() {}
@@ -134,10 +134,10 @@ exports.login._sql_login = function(username, password, cb) {
   )
 }
 
-/*
+/**
  * User disconnect
  * @param socketId {String}
- * @param callback {function} (err)
+ * @param cb {function} cb(err)
  */
 exports.disconnect = function(socketId, cb) {
   cb = cb || function() {}
@@ -150,7 +150,7 @@ exports.disconnect = function(socketId, cb) {
 /*
  * How many seconds since the user is offline? -1 if still online
  * @param username {String}
- * @param callback {function} (err, offlineFor)
+ * @param cb {function} cb(err, offlineFor)
  */
 exports.offlineFor = function(username, cb) {
   cb = cb || function() {}
@@ -187,11 +187,11 @@ exports.offlineFor._sql_getLastSeen = function(username, cb) {
   )
 }
 
-/*
+/**
  * Try to resume to a session, which was started from this envId
  * @param envId {String}
  * @param newSocketId {Number} The current (new) socketId
- * @param callback {function} (err, username)
+ * @param cb {function} cb(err, username)
  */
 exports.tryResume = function(envId, newSocketId, cb) {
   cb = cb || function() {}
@@ -225,10 +225,10 @@ exports.tryResume = function(envId, newSocketId, cb) {
   })
 }
 
-/*
+/**
  * User logout
  * @param envId {String}
- * @param callback {function} (err)
+ * @param cb {function} cb(err)
  */
 exports.logout = function(envId, cb) {
   cb = cb || function() {}
@@ -252,11 +252,12 @@ exports.logout._sql_updateLastSeen = function(username, cb) {
   )
 }
 
-/* User register
+/**
+ * User register
  * @param username {String}
  * @param password {String} Password unhashed
  * @param email {String}
- * @param callback {function} (err, insertId)
+ * @param cb {function} cb(err, insertId)
  */
 /*exports.register = function(username, password, email, cb) {
   cb = cb || function() {}
