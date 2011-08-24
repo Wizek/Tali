@@ -157,8 +157,8 @@ exports.disconnect = function(socketId, cb) {
   
   var mySession = this.session({socketId: socketId})
   mySession.set('disconnectedAt', new Date())
-  var userId = mySession.get('userId')
-  delete this._onlineStore[userId]
+  var username = mySession.get('username')
+  delete this._onlineStore[username]
 
   return cb()
 }
@@ -240,8 +240,8 @@ exports.tryResume = function(envId, newSocketId, cb) {
 
       userId = session.get('userId')
 
-      that._onlineStore[userId] = {
-        username: username
+      that._onlineStore[username] = {
+        userId: userId
       , focus: 0
       }
       onlineList = that._onlineStore
