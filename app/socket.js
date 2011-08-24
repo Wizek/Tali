@@ -3,6 +3,7 @@ var app = require('expressServer')
   , io = io.listen(app)
   , log = require('log')
   , user = require('user')
+  , node = require('node')
 
 io.sockets.on('connection', function (socket) {
   socket.on('set envId', function (envId, cb) {
@@ -29,4 +30,7 @@ io.sockets.on('connection', function (socket) {
   /*socket.on('set focus', function(nodeId, cb) {
     user.setFocus(nodeId, cb)
   })*/
+  socket.on('get level', function(id, cb) {
+    node.getLevel(id, cb)
+  })
 })

@@ -1,5 +1,5 @@
 var paths = require('../../app/paths')
-  , user = require('../../app/model/user')
+  , user = require('user')
 
 exports['User Session Store'] = function(test) {
   test.expect(7)
