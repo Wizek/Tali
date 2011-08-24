@@ -1,19 +1,73 @@
+<!DOCTYPE html>
 <html>
 <head>
   <title>WIP</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  <script src="/lib/jquery.cookie.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <script>
-    curl = {
-      paths: {
-        root: '/'
-      }
+    getEnvID() // Just so we save those microseconds too!
+    var socket = io.connect(location.origin)
+    socket.on('connect', function () {
+      socket.emit('set envID', getEnvID().token, function(err) {
+        // #16
+      })
+      onConnectionReady()
+    })
+    $(onDomReady)
+    function onDomReady () {
+      //$('body').html(null)
+      $('#loginNow').click(function() {
+        console.log('asd')
+        var user = $('#username').val()
+        var pass = $('#password').val()
+        socket.emit('login', user, pass, function(err) {
+          console.log(err)
+        })
+      })
     }
-  </script>
-  <script src="/lib/curl.js"></script>
-  <script>
-    curl(['/js/main.js', 'js!/socket.io/socket.io.js'])
+    function onConnectionReady () {
+      // body...
+    }
+    
+    function getEnvID (argument) {
+      var eID = $.cookie('eID')
+      var first = false
+      if (!eID) {
+        first = true
+        eID = genEnvID()
+        $.cookie('eID', eID, 365)
+      }
+      return {'first':first, 'token':eID}
+    }
+    function genEnvID () {
+      var token = ''
+      var loops = 8
+      var targetLength = 48
+      var useOfRandom = Math.pow(2,31)
+      while (token.length <= targetLength) {
+        token += (Math.random()*useOfRandom|0).toString(36)
+      }
+      return token.substring(0, targetLength)
+    }
   </script>
 </head>
 <body>
-  Üdvözlégy Mária!
+  <noscript><h1>Valami gond van a JavaScripteddel!</h1></noscript>
+  <form id="loginBox">
+    <table>
+      <tr>
+        <!-- <td><label for="username">Felhasználónév</label></td> -->
+        <td><input id="username" type="text" placeholder="Felhasználónév"></td>
+      </tr>
+      <tr>
+        <!-- <td><label for="password">Jelszó</label></td> -->
+        <td><input id="password" type="password" placeholder="Jelszó"></td>
+      </tr>
+      <tr>
+        <td><input id="loginNow" type="button" value="Belépek"></td>
+      </tr>
+    </table>
+  </form>
 </body>
 </html>
