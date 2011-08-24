@@ -147,7 +147,8 @@ exports.disconnect = function(socketId, cb) {
   this.session({socketId: socketId}).set('disconnectedAt', new Date())
   return cb()
 }
-/*
+
+/**
  * How many seconds since the user is offline? -1 if still online
  * @param username {String}
  * @param cb {function} cb(err, offlineFor)
@@ -259,33 +260,33 @@ exports.logout._sql_updateLastSeen = function(username, cb) {
  * @param email {String}
  * @param cb {function} cb(err, insertId)
  */
-/*exports.register = function(username, password, email, cb) {
+exports.register = function(username, password, email, cb) {
   cb = cb || function() {}
 
   if (typeof username != 'string')
-    return cb('A felhasználónév megadása kötelező!')
-  }
-  if (!password) {
-    return cb('A jelszó megadása kötelező!')
-  }
-  if (!email) {
-    return cb('Az e-mail cím megadása kötelező!')
-  }
-  if (username.length < 2 || username.length > 16) {
+    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+  
+  if (typeof password != 'string')
+    return cb('A jelszónak egy Stringnek kell lennie!')
+  
+  if (typeof email != 'string')
+    return cb('Az e-mail címnek egy Stringnek kell lennie!')
+  
+  if (username.length < 2 || username.length > 16)
     return cb('A felhasználónév hosszának 2 év 16 karakter között kell lennie!')
-  }
-  if (!username.match(/^[A-zÖÜÓŐÚÉÁŰÍöüóőúéáűí0-9]{2,32}$/)) { // unsure
+  
+  if (!username.match(/^[A-zÖÜÓŐÚÉÁŰÍöüóőúéáűí0-9]{2,32}$/))
     return cb('A felhasználónév csak a magyar ábécé betűít és számokat tartalmazhat!')
-  }
-  if (password.length < 8) {
+  
+  if (password.length < 8)
     return cb('A jelszó hossza legalább 8 karakter legyen!')
-  }
-  if (!password.match(/\d/)) {
+  
+  if (!password.match(/\d/))
     return cb('A jelszónak legalább 1 számot kell tartalmaznia!')
-  }
-  if (!email.match(/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/)) {
+  
+  if (!email.match(/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/))
     return cb('Hibás e-mail cím!')
-  }
+  
   that = this
   this.register._sql_checkUsername(username, function(err, result) {
     if (result.length > 0) {
@@ -316,4 +317,3 @@ exports.register._sql_register = function(username, password_type, password, ema
     return cb(err, info)
   })
 }
-*/

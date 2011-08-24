@@ -180,12 +180,24 @@ exports['User Logout'] = function(test) {
   })
 }
 
-/*exports['User Register'] = function(test) {
-  test.expect(15)
+exports['User Register'] = function(test) {
+  test.expect(16)
 
   test.equal(typeof user.register, 'function')
   test.equal(typeof user.register._sql_checkUsername, 'function')
   test.equal(typeof user.register._sql_register, 'function')
+
+  test.doesNotThrow(function() {
+    user.register(null, '', '', function(err) {
+      test.equal(err, 'A felhasználónévnek egy Stringnek kell lennie!')
+    })
+    user.register('', null, '', function(err) {
+      test.equal(err, 'A jelszónak egy Stringnek kell lennie!')
+    })
+    user.register('', '', null, function(err) {
+      test.equal(err, 'Az e-mail címnek egy Stringnek kell lennie!')
+    })
+  })
 
   user.register._sql_checkUsername = function(username, cb) {
     if (username == 'Fodi69') {
@@ -203,17 +215,8 @@ exports['User Logout'] = function(test) {
         cb(null, [])
       } else {
         cb('Registration error')
-      }*
+      }*/
   }
-  user.register('', 'test', 'test@test.hu', function(err) {
-    test.equal(err, 'A felhasználónév megadása kötelező!')
-  })
-  user.register('test', '', 'test@test.hu', function(err) {
-    test.equal(err, 'A jelszó megadása kötelező!')
-  })
-  user.register('test', 'test', '', function(err) {
-    test.equal(err, 'Az e-mail cím megadása kötelező!')
-  })
   user.register('t', 'test', 'test@test.hu', function(err) {
     test.equal(err, 'A felhasználónév hosszának 2 év 16 karakter között kell lennie!')
   })
@@ -240,4 +243,4 @@ exports['User Logout'] = function(test) {
     test.equal(userid, 1234)
   })
   test.done()
-}*/
+}
