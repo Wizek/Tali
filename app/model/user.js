@@ -86,7 +86,7 @@ exports.session = function(search) {
  * @param username {String}
  * @param password {String} Password unhashed
  * @param envId {String}
- * @param socketId {Number}
+ * @param socketId {String}
  * @param cb {function} cb(err)
  */
 exports.login = function (username, password, envId, socketId, cb) {
@@ -100,7 +100,7 @@ exports.login = function (username, password, envId, socketId, cb) {
   if (typeof envId != 'string')
     return cb('Az envId-nek Stringnek kell lennie!')
   
-  if (typeof socketId != 'number')
+  if (parseInt(socketId) != socketId)
     return cb('A socketId-nek Number-nek kell lennie!')
   
   // TODO hash
@@ -141,7 +141,7 @@ exports.login._sql_login = function(username, password, cb) {
  */
 exports.disconnect = function(socketId, cb) {
   cb = cb || function() {}
-  if (typeof socketId != 'number')
+  if (parseInt(socketId) != socketId)
     return cb('A socketId-nek Number-nek kell lennie!')
   
   this.session({socketId: socketId}).set('disconnectedAt', new Date())
@@ -191,7 +191,7 @@ exports.offlineFor._sql_getLastSeen = function(username, cb) {
 /**
  * Try to resume to a session, which was started from this envId
  * @param envId {String}
- * @param newSocketId {Number} The current (new) socketId
+ * @param newSocketId {String} The current (new) socketId
  * @param cb {function} cb(err, username)
  */
 exports.tryResume = function(envId, newSocketId, cb) {
@@ -199,7 +199,7 @@ exports.tryResume = function(envId, newSocketId, cb) {
   if (typeof envId != 'string')
     return cb('Az envId-nek Stringnek kell lennie!')
   
-  if (typeof newSocketId != 'number')
+  if (parseInt(newSocketId) != newSocketId)
     return cb('A socketId-nek Number-nek kell lennie!')
   
   var session = this.session({envId: envId})

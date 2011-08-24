@@ -30,13 +30,13 @@ exports['User Login'] = function (test) {
   test.equal(typeof user.login._sql_login, 'function')
 
   test.doesNotThrow(function() {
-    user.login(null, '', '', 0, function(err) {
+    user.login(null, '', '', '0', function(err) {
       test.equal(err, 'A felhasználónévnek egy Stringnek kell lennie!')
     })
-    user.login('', null, '', 0, function(err) {
+    user.login('', null, '', '0', function(err) {
       test.equal(err, 'A jelszónak egy Stringnek kell lennie!')
     })
-    user.login('', '', null, 0, function(err) {
+    user.login('', '', null, '0', function(err) {
       test.equal(err, 'Az envId-nek Stringnek kell lennie!')
     })
     user.login('', '', '', null, function(err) {
@@ -52,7 +52,7 @@ exports['User Login'] = function (test) {
     }
   }
   var envId = '0a1b2c3d4e5f'
-  var socketId = 123456789012345678
+  var socketId = '123456789012345678'
   user.login('Username', 'Password', envId, socketId, function(err) {
     test.equal(err, 'Nem megfelelő felhasználónév és jelszó kombináció!')
   })
@@ -79,7 +79,7 @@ exports['User Disconnect'] = function(test) {
     })
   })
 
-  var socketId = 123456789012345678
+  var socketId = '123456789012345678'
   var mySession = user.session('Juzer')
   mySession.init()
   mySession.set('socketId', socketId)
@@ -127,7 +127,7 @@ exports['User Try Resume'] = function(test) {
   })
 
   var envId = '0a1b2c3d4e5f'
-  var socketId = 123456789012345678
+  var socketId = '123456789012345678'
   user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
     test.equal(err, null)
     user.disconnect(socketId, function() {
@@ -167,7 +167,7 @@ exports['User Logout'] = function(test) {
   }
 
   var envId = '0a1b2c3d4e5f'
-  var socketId = 123456789012345678
+  var socketId = '123456789012345678'
   user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
     test.equal(err, null)
     user.logout(envId, function(err) {
