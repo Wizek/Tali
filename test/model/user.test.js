@@ -48,7 +48,7 @@ exports['User Login'] = function (test) {
   
   user.login._sql_login = function(username, password, cb) {
     if (username == 'Juzer' && password == 'p4sSwrD') {
-      return cb(null, [{count: 1}])
+      return cb(null, [{count: 1, userid: 1}])
     } else {
       return cb(null, [{count: 0}])
     }

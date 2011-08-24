@@ -6,6 +6,7 @@ var log = require('log')
   , db = require('db')
   //, crypto = require('crypto')
 
+exports._onlineStore = []
 exports._sessionStore = []
 
 /**
@@ -87,10 +88,11 @@ exports.session = function(search) {
  * @param password {String} Password unhashed
  * @param envId {String}
  * @param socketId {String}
- * @param cb {function} cb(err)
+ * @param cb {function} cb(err, userId)
  */
 exports.login = function (username, password, envId, socketId, cb) {
   cb = cb || function() {}
+
   if (typeof username != 'string')
     return cb('A felhasználónévnek egy Stringnek kell lennie!')
   
@@ -119,9 +121,15 @@ exports.login = function (username, password, envId, socketId, cb) {
       if (mySession.get('envId') == envId) {
         return cb('Nem jelentkezhetsz be kétszer! Előbb jelentkezz ki!')
       }
+      var userId = result[0].id
       mySession.set('envId', envId)
       mySession.set('socketId', socketId)
-      return cb()
+      mySession.set('userId', userId)
+      that._onlineStore[username] = {
+        userid: userId
+      , focus: 0
+      }
+      return cb(null, userId)
     } else {
       return cb('Nem megfelelő felhasználónév és jelszó kombináció!')
     }
@@ -129,7 +137,7 @@ exports.login = function (username, password, envId, socketId, cb) {
 }
 
 exports.login._sql_login = function(username, password, cb) {
-  db.query('SELECT count(username) AS count FROM tali_user WHERE username=? AND password=?'
+  db.query('SELECT count(username) AS count, id FROM tali_user WHERE username=? AND password=?'
   , [username, password]
   , function(err, result) {
       return cb(err, result)
@@ -147,7 +155,11 @@ exports.disconnect = function(socketId, cb) {
   if (parseInt(socketId) != socketId)
     return cb('A socketId-nek Number-nek kell lennie!')
   
-  this.session({socketId: socketId}).set('disconnectedAt', new Date())
+  var mySession = this.session({socketId: socketId})
+  mySession.set('disconnectedAt', new Date())
+  var userId = mySession.get('userId')
+  delete this._onlineStore[userId]
+
   return cb()
 }
 
@@ -195,7 +207,7 @@ exports.offlineFor._sql_getLastSeen = function(username, cb) {
  * Try to resume to a session, which was started from this envId
  * @param envId {String}
  * @param newSocketId {String} The current (new) socketId
- * @param cb {function} cb(err, username)
+ * @param cb {function} cb(err, username, userid, onlineList)
  */
 exports.tryResume = function(envId, newSocketId, cb) {
   cb = cb || function() {}
@@ -213,6 +225,7 @@ exports.tryResume = function(envId, newSocketId, cb) {
   if (!username) {
     return cb('Session doesn\'t have a username!')
   }
+  var that = this
   this.offlineFor(username, function(err, offlineFor) {
     if (err) {
       return cb(err)
@@ -224,7 +237,15 @@ exports.tryResume = function(envId, newSocketId, cb) {
     }*/
     if (offlineFor >= 0) {
       session.set('socketId', newSocketId)
-      return cb(null, username)
+
+      userId = session.get('userId')
+
+      that._onlineStore[userId] = {
+        username: username
+      , focus: 0
+      }
+      onlineList = that._onlineStore
+      return cb(null, username, userId, onlineList)
     }
   })
 }
