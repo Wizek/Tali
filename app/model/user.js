@@ -279,7 +279,7 @@ exports.logout._sql_updateLastSeen = function(username, cb) {
   )
 }
 
-/*
+/**
  * Focus on node
  * @param id {Number} Node id to focus on
  * @param username {String} Focuser
@@ -299,7 +299,7 @@ exports.setFocus = function(id, username, cb) {
   return cb()
 }
 
-/*
+/**
  * Lock node
  * @param id {Number} Node id to lock
  * @param username {String} Locker
@@ -324,7 +324,7 @@ exports.lock = function(id, username, cb) {
   return cb()
 }
 
-/*
+/**
  * Unlock all nodes for a user
  * @param username {String}
  * @param cb {function} cb(err)

@@ -5,7 +5,7 @@
 var log = require('log')
   , db = require('db')
 
-/*
+/**
  * Get node level
  * @param id {Number} parent ID
  * @param cb {function} cb(err, data)
@@ -40,7 +40,7 @@ exports.getLevel._sql_getLevel = function(id, cb) {
   )
 }
 
-/*
+/**
  * Edit headline
  * @param id {Number} Node id
  * @param newText {String}
@@ -59,11 +59,14 @@ exports.editHeadline = function(id, newText, userId, cb) {
   if (typeof userId != 'number')
     return cb('A userId-nek Number-nek kell lennie!')
 
-  this.editHeadline._sql_save(id, newText, function(err, results) {
+  this.editHeadline._sql_save(id, newText, function(err, result) {
     if (err) {
       log.error(err)
       return cb('Database error')
     } else {
+      if (result.affectedRows != 1) {
+        return cb('Nem találom a node-ot!')
+      }
       return cb()
     }
   })
@@ -72,13 +75,13 @@ exports.editHeadline = function(id, newText, userId, cb) {
 exports.editHeadline._sql_save = function(id, newText, cb) {
   db.query('UPDATE tali_node SET headline=? WHERE id=?'
   , [newText, id]
-  , function(err, results) {
-      return cb(err, results)
+  , function(err, result) {
+      return cb(err, result)
     }
   )
 }
 
-/*
+/**
  * Edit body
  * @param id {Number} Node id
  * @param newText {String}
@@ -97,11 +100,14 @@ exports.editBody = function(id, newText, userId, cb) {
   if (typeof userId != 'number')
     return cb('A userId-nek Number-nek kell lennie!')
 
-  this.editBody._sql_save(id, newText, function(err, results) {
+  this.editBody._sql_save(id, newText, function(err, result) {
     if (err) {
       log.error(err)
       return cb('Database error')
     } else {
+      if (result.affectedRows != 1) {
+        return cb('Nem találom a node-ot!')
+      }
       return cb()
     }
   })
@@ -110,8 +116,8 @@ exports.editBody = function(id, newText, userId, cb) {
 exports.editBody._sql_save = function(id, newText, cb) {
   db.query('UPDATE tali_node SET body=? WHERE id=?'
   , [newText, id]
-  , function(err, results) {
-      return cb(err, results)
+  , function(err, result) {
+      return cb(err, result)
     }
   )
 }
