@@ -1,58 +1,162 @@
 require.config({
     baseUrl: '/js'
-  , packagePaths: '/asdasd'
   , paths: {
-        jquery: 'https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min'
-      , order: '/lib/require/plugins/order'
-      , text: '/lib/require/plugins/text'
-      , qunit: '/lib/qunit/qunit'
+        'jquery': 'https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min'
+      , 'order': '/lib/require/plugins/order'
+      , 'text': '/lib/require/plugins/text'
+      , 'qunit': '/lib/qunit/qunit'
+      , '_': 'http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.1.7/underscore-min'
+      , 'Interface': 'Interface'
+      , 'jquery.cookie': '/lib/jquery.cookie'
+      , 'socketio': '/socket.io/socket.io'
     }
 })
 
 document.title = 'WIP'
 //QUnit.config.autostart = false
 
-define(['jquery'], function($) {
-  console.log('cp 4')
+require(['jquery', 'Interface', 'cookie', 'connect', 'template']
+  , function($, Interface, cookie, conn, tpl) {
 
   initQU(function() {
-    test("a basic test example", function() {
-      ok( true, "this test is fine" );
-      var value = "hello";
-      equal( value, "hello", "We expect value to be hello" );
-    });
+    module('Entry')
 
-    module("Module A");
+    // test('', function() {
+    //   expect(-1)
+    // })
 
-    test("first test within module", function() {
-      ok( true, "all pass" );
-    });
+    test('cookie', function() {
+      expect(6)
+      equal(typeof cookie, 'function')
+      equal(cookie('testfoo'), null)
+      equal(cookie('testfoo', '123431'), 'testfoo=123431')
+      equal(cookie('testfoo'), '123431')
+      ok(cookie('testfoo', null))
+      equal(cookie('testfoo'), null)
+    })
 
-    test("second test within module", function() {
-      ok( true, "all pass" );
-    });
+    test('envId', function() {
+      expect(11)
+      // Existance check
+      equal(typeof conn, 'function')
+      equal(typeof conn.getEnvId, 'function')
+      equal(typeof conn.getEnvId._get, 'function')
+      equal(typeof conn.getEnvId._set, 'function')
+      equal(typeof conn._connect, 'function')
+      equal(typeof conn._genEnvId, 'function')
 
-    module("Module B");
+      eid = conn._genEnvId()
+      equal(typeof eid, 'string')
+      equal(eid.length, 48)
 
-    test("some other test", function() {
-      expect(2);
-      equal( true, 2, "failing test" );
-      equal( true, true, "passing test" );
-    });
+      // That is stored...
+      conn.getEnvId._set(eid+'x')
+      // ... shall be returned
+      equal(conn.getEnvId._get(), eid+'x')
+
+      // safe to hide from overriding
+      var safe = {}
+      safe._get = conn.getEnvId._get
+      safe._genEnvId = conn.getEnvId._genEnvId
+      
+      // Override
+      conn.getEnvId._get = function() {return 'asdasd'}
+      equal(conn.getEnvId(), 'asdasd')
+      conn.getEnvId._get = function() {return null}
+      conn._genEnvId = function() {return 'fghfgh'}
+      equal(conn.getEnvId(), 'fghfgh')
+
+      // Restore
+      conn.getEnvId._get = safe._get
+      conn.getEnvId._genEnvId = safe._genEnvId
+    })
+
+    test('conn', function() {
+      expect(5)
+
+      equal(typeof conn, 'function')
+
+      var safe = {}
+      safe._connect = conn.getEnvId._connect
+
+      // Override
+      conn._connect = function(cb) {
+        return cb(null, 'testUser')
+      }
+
+      equal(conn.established, false)
+      stop()
+      conn(function(err, user) {
+        start()
+        equal(err, null)
+        equal(user, 'testUser')
+        equal(conn.established, true)
+      })
+
+      // Restore
+      conn.getEnvId._connect = safe._connect
+    })
+
+
+    test('templating', 5, function() {
+      expect(5)
+
+      equal(typeof tpl, 'function')
+      equal(typeof tpl._get, 'function')
+
+      var tplText = '<p id="{{ 1vF }}" class="{{ a a }}">{{ a }}</p>'
+
+      // Safe
+      var safe = {}
+      safe._get = tpl._get
+      // Override
+      tpl._get = function(name, cb) {
+        cb(tplText)
+      }
+
+      equal(tpl._render(tplText, {a:1, '1vF':'asd'})
+        , '<p id="asd" class="">1</p>')
+
+      tpl('test', {a:'ddd', '1vF':4344, 'a a':'f'}, function(html) {
+        equal(html, '<p id="4344" class="f">ddd</p>')
+      })
+      tpl('test', function(html) {
+        equal(html, '<p id="" class=""></p>')
+      })
+      // Restore
+      tpl._get = safe._get
+    })
+
+    test('init', function() {
+      expect(8)
+      equal(typeof Interface, 'object')
+      equal(typeof Interface.init, 'function')
+      equal(typeof Interface._initLogin, 'function')
+      equal(typeof Interface._initDoc, 'function')
+
+      stop()
+      equal($('body #tali-interface').length, 0)
+      equal($('form#login-box').length, 0)
+      Interface.init('login', function() {
+        start()
+        equal($('body #tali-interface').length, 0)
+        equal($('form#login-box').length, 1)
+      })
+    })
   })
 })
 
 function initQU (cb) {
   require(['text!/tpl/qunit.tpl', 'text!/lib/qunit/qunit.css', 'qunit']
     , function(tpl, css) {
-    //console.log(asd)
-    //console.log(QUnit)
     $('head').append('<style type="text/css">'+css+'</style>')
     $('body').append(tpl)
     // Workaround to make async loading of QUnit work
-    QUnit.load()
-    QUnit.init()
-    cb()
+    if (!$('#qunit-filter-pass').length) {
+      //QUnit.init()
+      QUnit.load() 
+    }
+    return cb()
   })
 }
 
@@ -60,10 +164,10 @@ function initQU (cb) {
 var preloadScripts = [
     'order!jquery'
   , 'order!qunit'
-  , 'order!/lib/jquery.cookie.js'
+  // , 'order!/lib/jquery.cookie.js'
 ]
 
-require(preloadScripts)
+// require(preloadScripts)
 
 
 /*define(['js!/socket.io/socket.io.js'], function(io) {

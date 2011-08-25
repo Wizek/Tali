@@ -1,17 +1,21 @@
 require.config({
     baseUrl: '/js'
-  , packagePaths: '/asdasd'
   , paths: {
-        jquery: 'https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min'
-      , order: '/lib/require/plugins/order'
-      , text: '/lib/require/plugins/text'
+        'jquery': 'https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min'
+      , 'order': '/lib/require/plugins/order'
+      , 'text': '/lib/require/plugins/text'
+      , 'qunit': '/lib/qunit/qunit'
+      , '_': 'http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.1.7/underscore-min'
+      , 'Interface': 'Interface'
+      , 'jquery.cookie': '/lib/jquery.cookie'
+      , 'socketio': '/socket.io/socket.io'
     }
 })
 
-define(['jquery'], function($) {
-  console.log('cp 4')
-  require(['text!/tpl/node.tpl'], function(node) {
-    console.log(node.)
+require(['connect', 'Interface'], function(conn, I) {
+  conn(function() {
+    I.init('login')
+    console.log(conn.established)
   })
 })
 
@@ -21,7 +25,7 @@ var preloadScripts = [
   , 'order!/lib/jquery.cookie.js'
 ]
 
-require(preloadScripts)
+//require(preloadScripts)
 
 
 /*define(['js!/socket.io/socket.io.js'], function(io) {
