@@ -30,7 +30,7 @@ io.sockets.on('connection', function (socket) {
   /*socket.on('set focus', function(nodeId, cb) {
     user.setFocus(nodeId, cb)
   })*/
-  socket.on('get level', function(id, cb) {
+  socket.on('get children of', function(id, cb) {
     node.getLevel(id, cb)
   })
 })
