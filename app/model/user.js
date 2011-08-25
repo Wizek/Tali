@@ -7,7 +7,7 @@ var log = require('log')
   //, crypto = require('crypto')
 
 exports._onlineStore = {}
-exports._sessionStore = []
+exports._sessionStore = {}
 
 /**
  * Session
@@ -127,7 +127,8 @@ exports.login = function (username, password, envId, socketId, cb) {
       mySession.set('userId', userId)
       that._onlineStore[username] = {
         userId: userId
-      , focus: 0
+      , focus: null
+      , lock: null
       }
       return cb(null, userId)
     } else {
@@ -242,7 +243,8 @@ exports.tryResume = function(envId, newSocketId, cb) {
 
       that._onlineStore[username] = {
         userId: userId
-      , focus: 0
+      , focus: null
+      , lock: null
       }
       onlineList = that._onlineStore
       return cb(null, username, userId, onlineList)
@@ -275,6 +277,66 @@ exports.logout._sql_updateLastSeen = function(username, cb) {
       return cb(err, result)
     }
   )
+}
+
+/*
+ * Focus on node
+ * @param id {Number} Node id to focus on
+ * @param username {String} Focuser
+ * @param cb {function} cb(err)
+ */
+
+exports.setFocus = function(id, username, cb) {
+  cb = cb || function() {}
+
+  if (parseInt(id) != id)
+    return cb('A node ID szám kell hogy legyen!')
+
+  if (typeof username != 'string')
+    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+
+  this._onlineStore[username]['focus'] = id
+  return cb()
+}
+
+/*
+ * Lock node
+ * @param id {Number} Node id to lock
+ * @param username {String} Locker
+ * @param cb {function} cb(err)
+ */
+exports.lock = function(id, username, cb) {
+  cb = cb || function() {}
+
+  if (parseInt(id) != id)
+    return cb('A node ID szám kell hogy legyen!')
+
+  if (typeof username != 'string')
+    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+
+  for (key in this._onlineStore) if (this._onlineStore.hasOwnProperty(key)) {
+    if (this._onlineStore[key]['lock'] == id) {
+      return cb('A node-ot már ' + key + ' zárolta')
+      break
+    }
+  }
+  this._onlineStore[username]['lock'] = id
+  return cb()
+}
+
+/*
+ * Unlock all nodes for a user
+ * @param username {String}
+ * @param cb {function} cb(err)
+ */
+exports.unlock = function(username, cb) {
+  cb = cb || function() {}
+
+  if (typeof username != 'string')
+    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+
+  this._onlineStore[username]['lock'] = null
+  return cb()
 }
 
 /**

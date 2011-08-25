@@ -5,8 +5,8 @@ var app = require('expressServer')
   , user = require('user')
   , node = require('node')
 
-var counter = 0
 io.sockets.on('connection', function (socket) {
+  var counter = 0
   socket.on('set envId', function (envId, cb) {
     socket.set('envId', envId, function() {
       user.tryResume(envId, socket.id, function(err, username, userId, onlineList) {
@@ -52,21 +52,41 @@ io.sockets.on('connection', function (socket) {
     user.register(username, password, email, cb)
   })
   afterAuth = function() {
-    /*socket.on('set focus', function(nodeId, cb) {
-      user.setFocus(nodeId, cb)
-    })*/
-    socket.on('get children of', function(id, cb) {
-      node.getLevel(id, cb)
-    })
-    socket.on('edit headline', function(id, newText, cb) {
-      socket.get('userId', function(err, userId) {
-        node.editHeadline(id, newText, userId, cb)
-        socket.broadcast.emit('change headline', id, newText)
+    socket.on('set focus', function(nodeId, cb) {
+      socket.get('username', function(err, username) {
+        user.setFocus(nodeId, username, cb)
+        socket.broadcast.emit('change focus', nodeId, username)
       })
     })
-    socket.on('edit body', function(id, newText, cb) {
-      node.editBody(id, newText, userId, cb)
-      socket.broadcast.emit('change body', id, newText, userId)
+    socket.on('get children of', function(nodeId, cb) {
+      node.getLevel(nodeId, cb)
+    })
+    socket.on('lock', function(nodeId, cb) {
+      socket.get('username', function(err, username) {
+        user.lock(nodeId, username, cb)
+        socket.broadcast.emit('change lock', nodeId, username)
+      })
+    })
+    socket.on('unlock', function(cb) {
+      socket.get('username', function(err, username) {
+        user.unlock(username, cb)
+      })
+    })
+    socket.on('edit headline', function(nodeId, newText, cb) {
+      socket.get('userId', function(err, userId) {
+        node.editHeadline(nodeId, newText, userId, cb)
+        socket.get('username', function(err, username) {
+          socket.broadcast.emit('change headline', nodeId, newText, username)
+        })
+      })
+    })
+    socket.on('edit body', function(nodeId, newText, cb) {
+      socket.get('userId', function(err, userId) {
+        node.editBody(nodeId, newText, userId, cb)
+        socket.get('username', function(err, username) {
+          socket.broadcast.emit('change body', nodeId, newText, username)
+        })
+      })
     })
   }
 })

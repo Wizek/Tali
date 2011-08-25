@@ -142,13 +142,13 @@ exports['User Try Resume'] = function(test) {
       var newSocketId = 141241535354542324
       user.tryResume('Hablaba', newSocketId, function(err, username) {
         test.equal(err, 'Session doesn\'t exists!')
+        user.tryResume(envId, newSocketId, function(err, username) {
+          test.equal(username, 'Juzer')
+          test.equal(user.session('Juzer').get('socketId'), newSocketId)
+          user.session('Juzer').kill()
+          test.done()
+        })
       })
-      user.tryResume(envId, newSocketId, function(err, username) {
-        test.equal(username, 'Juzer')
-      })
-      test.equal(user.session('Juzer').get('socketId'), newSocketId)
-      user.session('Juzer').kill()
-      test.done()
     })
   })
 }
@@ -174,11 +174,74 @@ exports['User Logout'] = function(test) {
     test.equal(err, null)
     user.logout(envId, function(err) {
       test.equal(err, null)
+      user.offlineFor('Juzer', function(seconds) {
+        test.ok(seconds >= 0)
+        test.done()
+      })
     })
-    user.offlineFor('Juzer', function(seconds) {
-      test.ok(seconds >= 0)
+  })
+}
+
+exports['User Set Focus'] = function(test) {
+  test.expect(6)
+
+  test.equal(typeof user.setFocus, 'function')
+
+  test.doesNotThrow(function() {
+    user.setFocus(null, '', function(err) {
+      test.equal(err, 'A node ID szám kell hogy legyen!')
     })
+    user.setFocus(1, null, function(err) {
+      test.equal(err, 'A felhasználónévnek egy Stringnek kell lennie!')
+    })
+  })
+
+  user.setFocus(1, 'Juzer', function(err) {
+    test.equal(err, null)
+    test.equal(user._onlineStore['Juzer']['focus'], 1)
     test.done()
+  })
+
+}
+
+exports['User Lock Node'] = function(test) {
+  test.expect(8)
+
+  test.equal(typeof user.lock, 'function')
+
+  test.doesNotThrow(function() {
+    user.lock(null, '', function(err) {
+      test.equal(err, 'A node ID szám kell hogy legyen!')
+    })
+    user.lock(1, null, function(err) {
+      test.equal(err, 'A felhasználónévnek egy Stringnek kell lennie!')
+    })
+  })
+
+  user.lock(1, 'Juzer', function(err) {
+    test.equal(err, null)
+    test.equal(user._onlineStore['Juzer']['lock'], 1)
+    user.lock(1, 'Juzer2', function(err) {
+      test.equal(err, 'A node-ot már Juzer zárolta')
+      test.equal(user._onlineStore['Juzer']['lock'], 1)
+      user._onlineStore['Juzer']['lock'] = null
+      test.done()
+    })
+  })
+}
+
+exports['User Unlock All'] = function(test) {
+  test.expect(4)
+
+  test.equal(typeof user.unlock, 'function')
+
+  user.lock(1, 'Juzer', function(err) {
+    test.equal(err, null)
+    user.unlock('Juzer', function(err) {
+      test.equal(err, null)
+      test.equal(user._onlineStore['Juzer']['lock'], null)
+      test.done()
+    })
   })
 }
 
