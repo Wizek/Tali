@@ -112,7 +112,7 @@ io.sockets.on('connection', function (socket) {
       })
     })
     /**
-     * Gets tbowling? mmhe childrens of a node
+     * Gets the childrens of a node
      * @param nodeId {Number}
      * @param cb {function} cb(err, results)
      */
