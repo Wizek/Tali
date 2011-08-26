@@ -1,6 +1,15 @@
+// ### Purpose:
+// Yet to be outlined.
+//
+//  - @dependencies
+//  - @constructor
+//  - @returns
+//
+//  **********************************************************************
+
+// Asyncronous Module Definition
 define(['jquery', 'template', 'connect'], function($, tpl, conn) {
   var socket = conn.socket
-  console.log(Object.keys(conn))
   var Interface, I
   Interface = I = {}
   I.init = function(what, cb) {

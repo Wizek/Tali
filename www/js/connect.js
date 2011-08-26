@@ -1,24 +1,40 @@
-define(['cookie', 'socketio'], function(cookie) {
+// ### Purpose:
+//
+//  - @dependencies
+//    - RequireJS
+//    - socket.amd
+//    - cookie
+//  - @constructor
+//  - @returns
+//
+//  **********************************************************************
+
+// Asyncronous Module Definition
+define(['cookie'], function(cookie) {
   var c, conn, connect
+
   c = conn = connect = function(cb) {
     if (typeof cb != 'function') cb = function() {}
-    c._connect(function(err, user) {
-      console.log(err)
+      c._connect(function(err, user) {
       if (!err) {
         c.established = true
       }
       return cb(err, user)
     })
   }
+
   c.established = false
   c.getEnvId = function() {
     var eid = c.getEnvId._get()
-    if (!eid) eid = c._genEnvId()
+    if (!eid) {eid = c._genEnvId()}
     return eid
   }
+
   c.getEnvId._get = function() {
+    //console.log(cookie('eid'))
     return cookie('eid')
   }
+
   c.getEnvId._set = function(it) {
     cookie('eid', it)
   }
@@ -39,14 +55,15 @@ define(['cookie', 'socketio'], function(cookie) {
       console.error('connection not ready yet')
     }
   }
+
   c._connect = function(cb) {
-    var socket = io.connect(location.origin)
-    var b = c
-    c.socket = socket
-    console.log(b.socket, c.socket)
-    socket.on('connect', function () {
-      socket.emit('set envId', c.getEnvId(), function(err, user) {
-        return cb(err, user)
+    require(['socket.amd'], function(socket) {
+      socket.on('connect', function () {
+        console.log(c.getEnvId())
+        console.log(c.getEnvId())
+        socket.emit('set envId', c.getEnvId(), function(err, user) {
+          return cb(err, user)
+        })
       })
     })
   }

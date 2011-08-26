@@ -9,14 +9,14 @@ require.config({
       , 'Interface': 'Interface'
       , 'jquery.cookie': '/lib/jquery.cookie'
       , 'socketio': '/socket.io/socket.io'
+      //, 'socket.amd': ''
     }
 })
 
 document.title = 'WIP'
 //QUnit.config.autostart = false
 
-require(['jquery', 'Interface', 'cookie', 'connect', 'template']
-  , function($, Interface, cookie, conn, tpl) {
+require(['jquery'], function($) {
 
   initQU(function() {
     module('Entry')
@@ -25,124 +25,211 @@ require(['jquery', 'Interface', 'cookie', 'connect', 'template']
     //   expect(-1)
     // })
 
-    test('cookie', function() {
+    /*
+    test('amd', function() {
+      require(['amd'], function(o) {
+        console.log(1, JSON.stringify(o))
+        o.a++
+        console.log(1.5, JSON.stringify(o))
+        require(['amd'], function(o) {
+          console.log(2, JSON.stringify(o))
+        })
+      })
+      require(['amd'], function(o) {
+        console.log(3, JSON.stringify(o))
+        require(['amd'], function(o) {
+          o.asd = 'asd'
+          console.log(4, JSON.stringify(o))
+        })
+      })
+      require(['amd'], function(o) {
+        console.log(5, JSON.stringify(o))
+        require(['amd'], function(o) {
+          console.log(6, JSON.stringify(o))
+        })
+      })
+    })
+    */
+
+    test('io.amd', function() {
+      expect(3)
+      equal(typeof window.io, 'undefined')
+      stop(1000)
+      require(['io.amd'], function(ioRecieved) {
+        start()
+        equal(typeof ioRecieved, 'object')
+        //equal(Object.keys(ioRecieved.sockets).length, 0
+        //  , 'We shouldn\'t have made connections just yet')
+        equal(typeof window.io, 'undefined')
+      })
+    })
+
+    test('socket.amd', function() {
+      expect(4)
+      equal(typeof socket, 'undefined', 'asd')
+      equal(typeof io, 'undefined')
+      stop(1000)
+      require(['socket.amd'], function(socket) {
+        start()
+        console.log(socket)
+        equal(typeof socket, 'object')
+        equal(typeof window.io, 'undefined')
+      })
+    })
+
+    test('Setting, getting cookies', function() {
       expect(6)
-      equal(typeof cookie, 'function')
-      equal(cookie('testfoo'), null)
-      equal(cookie('testfoo', '123431'), 'testfoo=123431')
-      equal(cookie('testfoo'), '123431')
-      ok(cookie('testfoo', null))
-      equal(cookie('testfoo'), null)
+      stop(1000)
+      require(['cookie'], function(cookie) {
+        start()
+        equal(typeof cookie, 'function')
+        equal(cookie('testfoo'), null)
+        equal(cookie('testfoo', '123431'), 'testfoo=123431')
+        equal(cookie('testfoo'), '123431')
+        ok(cookie('testfoo', null))
+        equal(cookie('testfoo'), null)    
+      })
     })
 
     test('envId', function() {
-      expect(11)
-      // Existance check
-      equal(typeof conn, 'function')
-      equal(typeof conn.getEnvId, 'function')
-      equal(typeof conn.getEnvId._get, 'function')
-      equal(typeof conn.getEnvId._set, 'function')
-      equal(typeof conn._connect, 'function')
-      equal(typeof conn._genEnvId, 'function')
+      expect(12)
+      equal(typeof conn, 'undefined')
+      stop(1000)
+      require(['connect', 'cookie'], function(conn, cookie) {
+        start()
+        ok(false)
+        console.log('false')
+        // safe to hide from overriding
+        var safe = {}
+        safe._get = conn.getEnvId._get
+        safe._genEnvId = conn.getEnvId._genEnvId
+        safe.eidCookie = cookie('eid')
+        cookie('eid', null)
 
-      eid = conn._genEnvId()
-      equal(typeof eid, 'string')
-      equal(eid.length, 48)
+        // Existance check
+        equal(typeof conn, 'function')
+        equal(typeof conn.getEnvId, 'function')
+        equal(typeof conn.getEnvId._get, 'function')
+        equal(typeof conn.getEnvId._set, 'function')
+        equal(typeof conn._connect, 'function')
+        equal(typeof conn._genEnvId, 'function')
 
-      // That is stored...
-      conn.getEnvId._set(eid+'x')
-      // ... shall be returned
-      equal(conn.getEnvId._get(), eid+'x')
+        eid = conn._genEnvId()
+        equal(typeof eid, 'string')
+        equal(eid.length, 48)
 
-      // safe to hide from overriding
-      var safe = {}
-      safe._get = conn.getEnvId._get
-      safe._genEnvId = conn.getEnvId._genEnvId
-      
-      // Override
-      conn.getEnvId._get = function() {return 'asdasd'}
-      equal(conn.getEnvId(), 'asdasd')
-      conn.getEnvId._get = function() {return null}
-      conn._genEnvId = function() {return 'fghfgh'}
-      equal(conn.getEnvId(), 'fghfgh')
+        // Shorter, higher level form
+        console.log(conn.getEnvId())
+        console.log(conn.getEnvId())
+        console.log(conn.getEnvId())
+        equal(conn.getEnvId(), conn.getEnvId(), 'asd')
+        // That is stored...
+        conn.getEnvId._set(eid+'x')
+        // ... shall be returned
+        equal(conn.getEnvId._get(), eid+'x')
 
-      // Restore
-      conn.getEnvId._get = safe._get
-      conn.getEnvId._genEnvId = safe._genEnvId
+
+        
+        // Override
+        conn.getEnvId._get = function() {return 'asdasd'}
+        equal(conn.getEnvId(), 'asdasd')
+        conn.getEnvId._get = function() {return null}
+        conn._genEnvId = function() {return 'fghfgh'}
+        equal(conn.getEnvId(), 'fghfgh')
+
+        // Restore
+        conn.getEnvId._get = safe._get
+        conn.getEnvId._genEnvId = safe._genEnvId
+        cookie('eid', safe.eidCookie)
+      })
+    })
+
+    test('templating', function() {
+      expect(7)
+      stop(100)
+      equal(typeof tpl, 'undefined')
+      require(['template'], function(tpl) {
+        start()
+        equal(typeof tpl, 'function')
+        equal(typeof tpl._get, 'function')
+        equal(typeof tpl._parse, 'function')
+
+        var tplText = '<p id="{{ 1vF }}" class="{{ a a }}">{{ a }}</p>'
+
+        // Safe
+        var safe = {}
+        safe._get = tpl._get
+        // Override
+        tpl._get = function(name, cb) {
+          cb(tplText)
+        }
+
+        equal(tpl._parse(tplText, {a:1, '1vF':'asd'})
+          , '<p id="asd" class="">1</p>')
+        
+        tpl('test', {a:'ddd', '1vF':4344, 'a a':'f'}, function(html) {
+          equal(html, '<p id="4344" class="f">ddd</p>')
+        })
+        tpl('test', function(html) {
+          equal(html, '<p id="" class=""></p>')
+        })
+
+        // Restore
+        tpl._get = safe._get
+      })
     })
 
     test('conn', function() {
-      expect(5)
-
-      equal(typeof conn, 'function')
-
-      var safe = {}
-      safe._connect = conn.getEnvId._connect
-
-      // Override
-      conn._connect = function(cb) {
-        return cb(null, 'testUser')
-      }
-
-      equal(conn.established, false)
-      stop()
-      conn(function(err, user) {
+      expect(6)
+      equal(typeof conn, 'undefined')
+      stop(1000)
+      require(['connect'], function(conn) {
         start()
-        equal(err, null)
-        equal(user, 'testUser')
-        equal(conn.established, true)
+        equal(typeof conn, 'function')
+        var safe = {}
+        safe._connect = conn.getEnvId._connect
+
+        // Override
+        conn._connect = function(cb) {
+          return cb(null, 'testUser')
+        }
+
+        equal(conn.established, false)
+        stop(1000)
+        conn(function(err, user) {
+          start()
+          equal(err, null)
+          equal(user, 'testUser')
+          equal(conn.established, true)
+        })
+
+        // Restore
+        conn.getEnvId._connect = safe._connect
       })
-
-      // Restore
-      conn.getEnvId._connect = safe._connect
-    })
-
-
-    test('templating', 5, function() {
-      expect(5)
-
-      equal(typeof tpl, 'function')
-      equal(typeof tpl._get, 'function')
-
-      var tplText = '<p id="{{ 1vF }}" class="{{ a a }}">{{ a }}</p>'
-
-      // Safe
-      var safe = {}
-      safe._get = tpl._get
-      // Override
-      tpl._get = function(name, cb) {
-        cb(tplText)
-      }
-
-      equal(tpl._render(tplText, {a:1, '1vF':'asd'})
-        , '<p id="asd" class="">1</p>')
-
-      tpl('test', {a:'ddd', '1vF':4344, 'a a':'f'}, function(html) {
-        equal(html, '<p id="4344" class="f">ddd</p>')
-      })
-      tpl('test', function(html) {
-        equal(html, '<p id="" class=""></p>')
-      })
-      // Restore
-      tpl._get = safe._get
     })
 
     test('init', function() {
-      expect(8)
-      equal(typeof Interface, 'object')
-      equal(typeof Interface.init, 'function')
-      equal(typeof Interface._initLogin, 'function')
-      equal(typeof Interface._initDoc, 'function')
-
-      stop()
-      equal($('body #tali-interface').length, 0)
-      equal($('form#login-box').length, 0)
-      Interface.init('login', function() {
+      expect(9)
+      equal(typeof I, 'undefined')
+      stop(1000)
+      require(['Interface'], function(I) {
         start()
+        equal(typeof I, 'object')
+        equal(typeof I.init, 'function')
+        equal(typeof I._initLogin, 'function')
+        equal(typeof I._initDoc, 'function')
+
         equal($('body #tali-interface').length, 0)
-        equal($('form#login-box').length, 1)
+        equal($('form#login-box').length, 0)
+        stop(1000)
+        I.init('login', function() {
+          start()
+          equal($('body #tali-interface').length, 0)
+          equal($('form#login-box').length, 1)
+        })
       })
     })
+
   })
 })
 

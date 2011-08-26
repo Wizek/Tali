@@ -13,8 +13,9 @@ require.config({
 })
 
 require(['connect', 'Interface'], function(conn, I) {
+  I.init('login')
   conn(function() {
-    I.init('login')
+    console.log(arguments)
     console.log(conn.established)
   })
 })
