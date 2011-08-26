@@ -1,11 +1,23 @@
-echo Building with doc.md
-echo 
-doc.md app/ docs/
-echo 
+# echo Building with doc.md
+# echo
+# doc.md app/ docs/
+# echo
+# echo doc.md done!
+# echo Building with dox
+# echo
+# dox --title "Tali" app/* > docs/index.html
+# echo
+# echo dox done!
+
+echo Building with Docco
+echo
+
+node_modules/docco/bin/docco app/*.js
+# Different docs for FE
+cd www/
+../node_modules/docco/bin/docco js/*.js
+
+echo
 echo doc.md done!
-echo Building with dox
-echo 
-dox --title "Tali" app/* > docs/index.html
-echo 
-echo dox done!
+
 exit 0
