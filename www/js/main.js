@@ -13,9 +13,19 @@ require.config({
 })
 
 require(['connect', 'Interface'], function(conn, I) {
-  I.init('login')
-  conn(function() {
-    console.log(arguments)
+  conn(function(err, username) {
+    if (err) {
+      console.log(err)
+    }else{
+      if (username) {
+        I.init('doc')
+        I.getChildrenOf(0, function(err, html) {
+          I.placeAsChidrenOf(0, html)
+        })
+      }else{
+        I.init('login')
+      }
+    }
     console.log(conn.established)
   })
 })

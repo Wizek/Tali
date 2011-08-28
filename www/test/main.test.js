@@ -277,7 +277,7 @@ require(['jquery'], function($) {
     })
     
     test('Node placement', function() {
-      expect(4)
+      expect(6)
       var safe = {}
       stop(1000)
       require(['Interface'], function(I) {

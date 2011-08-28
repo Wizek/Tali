@@ -55,7 +55,7 @@ define(['jquery', 'template'], function($, tpl) {
   }
 
   I._initLogin._login._emit = function(user, pass, cb) {
-    require(['socket.amd'], function() {
+    require(['socket.amd'], function(socket) {
       socket.emit('login', user, pass, function(err) {
         cb(err)
       })
@@ -92,7 +92,7 @@ define(['jquery', 'template'], function($, tpl) {
           }
         })
         function done () {
-          if (--counter) return
+          if (--counter) dreturn
           return cb(err, htmlResults.join(''))
         }
       }
@@ -112,6 +112,7 @@ define(['jquery', 'template'], function($, tpl) {
     if (id == 0) {
       console.log('focused')
       $('#null-node').html(html)
+      $('.focused').removeClass('focused')
       $('li.node').eq(0).addClass('focused')
       return true
     }else{
