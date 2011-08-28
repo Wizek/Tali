@@ -140,6 +140,27 @@ io.sockets.on('connection', function (socket) {
   }
 
   /**
+   * Makes a new node
+   * If the aboveId is 0 or null, then the new node will be the first in the list,
+   * if the aboveId is the Id of the last node, then the new node will be the last node
+   * If the make is successful, it broadcasts a 'new node' event, with the
+   * parentId, nodeId, nodePosition and the username
+   * @param parentId {Number}
+   * @param aboveId {Number} id of the node above the new node
+   * @param cb {function} cb(err, nodeId, nodePosition)
+   */
+  afterAuth['new node'] = function(parentId, aboveId, cb) {
+    socket.get('userId', function(err, userId) {
+      socket.get('username', function(err, username) {
+        node.newNode(parentId, aboveId, userId, function(err, nodeId, nodePosition) {
+          socket.broadcast.emit('new node', parentId, nodeId, nodePosition, username)
+          return cb(err, nodeId, nodePosition)
+        })
+      })
+    })
+  }
+
+  /**
    * Locks a node for editing
    * @param nodeId {Number}
    * @param cb {function} cb(err)

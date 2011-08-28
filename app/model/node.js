@@ -6,6 +6,11 @@ var log = require('log')
   , db = require('db')
 
 /**
+ * Global variable
+ */
+var NODE_MAX_POSITION = 8388607
+
+/**
  * Get node level
  * @param id {Number} parent ID
  * @param cb {function} cb(err, data)
@@ -36,6 +41,93 @@ exports.getLevel._sql_getLevel = function(id, cb) {
   , [id]
   , function(err, results) {
       return cb(err, results)
+    }
+  )
+}
+
+/**
+ * Make new node
+ * @param parentId {Number} parent ID
+ * @param aboveId {Number} ID of the node above the new node
+ * @param userId {Number} Creator
+ * @param cb {function} cb(err, nodeId)
+ */
+exports.newNode = function(parentId, aboveId, userId, cb) {
+  cb = cb || function() {}
+
+  if (parseInt(parentId) != parentId)
+    return cb('A parent ID szám kell hogy legyen!')
+
+  if (parseInt(aboveId) != aboveId)
+    return cb('Az above ID szám kell hogy legyen!')
+
+  if (parseInt(userId) != userId)
+    return cb('A user ID szám kell hogy legyen!')
+
+  var abovePosition = 0
+  var nextPosition = 0
+  var that = this
+  var cb_afterPosition = function(abovePosition) {
+    that.newNode._sql_selectNextNode(parentId, abovePosition, function(err, result) {
+      if (Object.keys(result[0]).length == 0) {
+        nextPosition = NODE_MAX_POSITION
+      } else {
+        nextPosition = result[0].position
+      }
+      var newPosition = Math.round(abovePosition + (nextPosition - abovePosition) / 2)
+      that.newNode._sql_createEmptyNode(function(err, result) {
+        var newId = result.insertId
+        that.newNode._sql_saveHierarchy(parentId, newId, newPosition, function(err, info) {
+          return cb(err, newId, newPosition)
+        })
+      })
+    })
+  }
+  if (aboveId == 0 || aboveId == null) {
+    cb_afterPosition(0)
+  } else {
+    this.newNode._sql_selectPosition(parentId, aboveId, function(err, result) {
+      cb_afterPosition(result[0].position)
+    })
+  }
+}
+
+exports.newNode._sql_selectPosition = function(parentId, aboveId, cb) {
+  db.query('SELECT position FROM tali_node_hierarchy'
+  + ' WHERE parent_id = ? AND child_id=?'
+  , [parentId, aboveId]
+  , function(err, result) {
+      return cb(err, result)
+    }
+  )
+}
+
+exports.newNode._sql_selectNextNode = function(parentId, abovePosition, cb) {
+  db.query('SELECT child_id, position FROM tali_node_hierarchy'
+  + ' WHERE parent_id=? AND position>?'
+  + ' ORDER BY position ASC LIMIT 1'
+  , [parentId, abovePosition]
+  , function(err, result) {
+      return cb(err, result)
+    }
+  )
+}
+
+exports.newNode._sql_createEmptyNode = function(cb) {
+  db.query('INSERT INTO tali_node(updated_at, created_at)'
+  + ' VALUES (now(), now())'
+  , function(err, info) {
+      return cb(err, info)
+    }
+  )
+}
+
+exports.newNode._sql_saveHierarchy = function(parentId, newId, position, cb) {
+  db.query('INSERT INTO tali_node_hierarchy(parent_id, child_id, position)'
+  + ' VALUES (?, ?, ?)'
+  , [parentId, newId, position]
+  , function(err, info) {
+      return cb(err, info)
     }
   )
 }
