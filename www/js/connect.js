@@ -26,7 +26,10 @@ define(['cookie'], function(cookie) {
   c.established = false
   c.getEnvId = function() {
     var eid = c.getEnvId._get()
-    if (!eid) {eid = c._genEnvId()}
+    if (!eid) {
+      eid = c._genEnvId()
+      c.getEnvId._set(eid)
+    }
     return eid
   }
 

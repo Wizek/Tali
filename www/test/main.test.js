@@ -28,6 +28,11 @@ require(['jquery'], function($) {
     /*
     test('amd', function() {
       require(['amd'], function(o) {
+        console.log(o.counter)
+        o.counterPlusOne()
+        console.log(o.counter)
+      })
+
         console.log(1, JSON.stringify(o))
         o.a++
         console.log(1.5, JSON.stringify(o))
@@ -49,9 +54,9 @@ require(['jquery'], function($) {
         })
       })
     })
-    */
+      */
 
-    test('io.amd', function() {
+    test('io.amd - AMD compliant socket.io', function() {
       expect(3)
       equal(typeof window.io, 'undefined')
       stop(1000)
@@ -64,14 +69,13 @@ require(['jquery'], function($) {
       })
     })
 
-    test('socket.amd', function() {
+    test('socket.amd - Returns the socket', function() {
       expect(4)
       equal(typeof socket, 'undefined', 'asd')
       equal(typeof io, 'undefined')
       stop(1000)
       require(['socket.amd'], function(socket) {
         start()
-        console.log(socket)
         equal(typeof socket, 'object')
         equal(typeof window.io, 'undefined')
       })
@@ -91,14 +95,13 @@ require(['jquery'], function($) {
       })
     })
 
-    test('envId', function() {
-      expect(12)
+    test('Generating, setting, getting envId', function() {
+      expect(13)
       equal(typeof conn, 'undefined')
       stop(1000)
       require(['connect', 'cookie'], function(conn, cookie) {
         start()
-        ok(false)
-        console.log('false')
+        
         // safe to hide from overriding
         var safe = {}
         safe._get = conn.getEnvId._get
@@ -119,10 +122,8 @@ require(['jquery'], function($) {
         equal(eid.length, 48)
 
         // Shorter, higher level form
-        console.log(conn.getEnvId())
-        console.log(conn.getEnvId())
-        console.log(conn.getEnvId())
-        equal(conn.getEnvId(), conn.getEnvId(), 'asd')
+        equal(conn.getEnvId(), conn.getEnvId()
+          , 'Does double call return the same value?')
         // That is stored...
         conn.getEnvId._set(eid+'x')
         // ... shall be returned
@@ -144,7 +145,7 @@ require(['jquery'], function($) {
       })
     })
 
-    test('templating', function() {
+    test('Templating engine', function() {
       expect(7)
       stop(100)
       equal(typeof tpl, 'undefined')
@@ -179,7 +180,7 @@ require(['jquery'], function($) {
       })
     })
 
-    test('conn', function() {
+    test('Establishing connection to back end', function() {
       expect(6)
       equal(typeof conn, 'undefined')
       stop(1000)
@@ -208,8 +209,8 @@ require(['jquery'], function($) {
       })
     })
 
-    test('init', function() {
-      expect(9)
+    test('Initialize Interface', function() {
+      expect(15)
       equal(typeof I, 'undefined')
       stop(1000)
       require(['Interface'], function(I) {
@@ -226,31 +227,112 @@ require(['jquery'], function($) {
           start()
           equal($('body #tali-interface').length, 0)
           equal($('form#login-box').length, 1)
+          equal($('#username').length, 1)
+          equal($('#password').length, 1)
+          equal($('#loginNow').length, 1)
+          stop(1000)
+          I.init('doc', function() {
+            start()
+            equal($('body > #tali-interface').length, 1)
+            equal($('form#login-box').length, 0)
+            equal($('ul#null-node.node-conainer').length, 1)
+            
+          })
         })
       })
     })
 
+
+    test('Node retrival, processing', function() {
+      expect(4)
+      var safe = {}
+      stop(1000)
+      require(['Interface'], function(I) {
+        start()
+        equal(typeof I.getChildrenOf, 'function')
+        equal(typeof I.getChildrenOf._emit, 'function')
+
+        safe._emit = I.getChildrenOf._emit
+        I.getChildrenOf._emit = function(id, cb) {
+          cb(null, [
+            {
+              "id": 1,
+              "headline": "#1",
+              "body": "2",
+              "updated_at": "2011-08-24T05:27:31.000Z",
+              "created_at": "2011-08-24T05:27:31.000Z",
+              "parent_id": 0,
+              "childnum": 2
+            }
+          ])
+        }
+        stop(1000)
+        I.getChildrenOf(0, function(err, html) {
+          start()
+          equal(err, null)
+          equal(typeof html, 'string')
+          I.getChildrenOf._emit = safe._emit
+        })
+      })
+    })
+    
+    test('Node placement', function() {
+      expect(4)
+      var safe = {}
+      stop(1000)
+      require(['Interface'], function(I) {
+        start()
+        equal(typeof I.placeAsChidrenOf, 'function')
+        safe._emit = I.getChildrenOf._emit
+        I.getChildrenOf._emit = function(id, cb) {
+          cb(null, $.extend(true, [], [
+            {
+              "id": 1,
+              "headline": "#1",
+              "body": "2",
+              "updated_at": "2011-08-24T05:27:31.000Z",
+              "created_at": "2011-08-24T05:27:31.000Z",
+              "parent_id": 0,
+              "childnum": 2
+            }
+          ]))
+        }
+        equal($('li.node.focused').length, 0)
+        I.getChildrenOf(0, function(err, html) {
+          equal(I.placeAsChidrenOf(1, html), false)
+          equal(I.placeAsChidrenOf(0, html), true)
+          equal($('li.node').length, 1)
+          equal($('li.node.focused').length, 1)
+          I.getChildrenOf._emit = safe._emit
+        })
+      })
+    })
+    
   })
 })
 
 function initQU (cb) {
-  require(['text!/tpl/qunit.tpl', 'text!/lib/qunit/qunit.css', 'qunit']
+  require(['text!/tpl/qunit.tpl', 'text!/lib/qunit/qunit.css']
     , function(tpl, css) {
     $('head').append('<style type="text/css">'+css+'</style>')
     $('body').append(tpl)
-    // Workaround to make async loading of QUnit work
-    if (!$('#qunit-filter-pass').length) {
-      //QUnit.init()
+    require(['qunit'], function() {
+      // Workaround to make async loading of QUnit work
+      // if (!$('#qunit-filter-pass').length) {
+      //   QUnit.load() 
+      // }
       QUnit.load() 
-    }
-    return cb()
+      QUnit.init()
+      start()
+      return cb()  
+    })
   })
 }
 
 // Little optimization for speed
 var preloadScripts = [
     'order!jquery'
-  , 'order!qunit'
+  // , 'order!qunit'
   // , 'order!/lib/jquery.cookie.js'
 ]
 
