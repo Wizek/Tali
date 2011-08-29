@@ -92,7 +92,7 @@ define(['jquery', 'template'], function($, tpl) {
           }
         })
         function done () {
-          if (--counter) dreturn
+          if (--counter) return
           return cb(err, htmlResults.join(''))
         }
       }
