@@ -6,35 +6,47 @@ var log = require('log')
   , db = require('db')
   //, crypto = require('crypto')
 
+/**
+ * Storing online (logged in) users
+ */
 exports._onlineStore = {}
+
+/**
+ * Storing the session between two socket.io connections
+ * for an environment specified by envId
+ */
 exports._sessionStore = {}
 
 /**
- * Session
+ * Get a row from the session store by a searchterm
  * @param search {object} String (for username) or any object
  * @return {object} with functions .init(), .get(), .set(), .kill()
  */
 exports.session = function(search) {
-  var foundUser = ''
   if (!search) {
-    //log.error('Nem adtál meg session kulcsszót')
+    log.error('SESSION: Nem adtál meg session kulcsszót')
     return
   }
+  if (typeof search != 'string' && typeof search != 'object') {
+    log.error('SESSION: A kereséshez egy String (username) vagy egy objektum szükséges')
+    return
+  }
+  // Quick search just by defining the username as string
   if (typeof search == 'string') {
-    if (!this._sessionStore[search]) {
-      /*log.error('Nem található a hivatkozott session')
-      log.debug('Searched username: ' + search)*/
+    search = {
+      username: search
     }
-    foundUser = search
-  } else if (search.username) {
+  }
+  // This will be later the key of the found session
+  var foundSessionKey = ''
+  if (search.username) {
     if (!this._sessionStore[search.username]) {
-      /*log.error('Nem található a hivatkozott session')
-      log.debug('Searched username: ' + search)*/
+      //log.debug('SESSION: Nem található a keresett session:', search)
     }
-    foundUser = search.username
-  } else if (typeof search == 'object') {
+    foundSessionKey = search.username
+  } else {
     if (Object.keys(search).length != 1) {
-      // log.error('Csak egyetlen paraméterre kereshetsz a sessionben')
+      log.error('SESSION: Csak egyetlen paraméterre kereshetsz a sessionben')
       return
     }
     // Extract the first key
@@ -42,40 +54,43 @@ exports.session = function(search) {
 
     for(var key in this._sessionStore) if (this._sessionStore.hasOwnProperty(key)) {
       if (this._sessionStore[key][searchField] == search[searchField]) {
-        foundUser = key
+        foundSessionKey = key
       }
-    }
-    if (!foundUser) {
-      log.error('Nem található a hivatkozott session')
-      log.debug('Searched', search)
     }
   }
  
+  // Creating the return object
   var obj = {}
   var self = this
-  obj.exists = this._sessionStore[foundUser] ? true : false
+  obj.exists = this._sessionStore[foundSessionKey] ? true : false
   obj.init = function() {
-    this.exists = true
-    self._sessionStore[foundUser] = {}
+    if (!foundSessionKey) {
+      log.error('SESSION: Így nem init-elhetsz session-t!')
+      return
+    }
+    if (!this.exists) {
+      this.exists = true
+      self._sessionStore[foundSessionKey] = {}
+    }
   }
   obj.get = function(key) {
-    if (self._sessionStore[foundUser]) {
+    if (self._sessionStore[foundSessionKey]) {
       if (key == 'username') {
-        return foundUser
-      } else if (self._sessionStore[foundUser][key]) {
-        return self._sessionStore[foundUser][key]
+        return foundSessionKey
+      } else if (self._sessionStore[foundSessionKey][key]) {
+        return self._sessionStore[foundSessionKey][key]
       }
     }
   }
   obj.set = function(key, value) {
-    if (!self._sessionStore[foundUser]) {
+    if (!self._sessionStore[foundSessionKey]) {
       this.init()
     }
-    self._sessionStore[foundUser][key] = value
+    self._sessionStore[foundSessionKey][key] = value
   }
   obj.kill = function() {
-    if (self._sessionStore[foundUser]) {
-      delete self._sessionStore[foundUser] // Kill it!
+    if (self._sessionStore[foundSessionKey]) {
+      delete self._sessionStore[foundSessionKey] // Kill it!
       this.exists = false
     }
   }
@@ -220,12 +235,9 @@ exports.tryResume = function(envId, newSocketId, cb) {
   
   var session = this.session({envId: envId})
   if (!session.exists) {
-    return cb('Session doesn\'t exists!')
+    return cb('Nem voltál belépve ebben a környezetben!')
   }
   var username = session.get('username')
-  if (!username) {
-    return cb('Session doesn\'t have a username!')
-  }
   var that = this
   this.offlineFor(username, function(err, offlineFor) {
     if (err) {

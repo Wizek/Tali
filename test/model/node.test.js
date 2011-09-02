@@ -26,7 +26,7 @@ exports['Node get level'] = function(test) {
   test.done()
 }
 
-exports['New node creation'] = function(test) {
+exports['New node creation exists'] = function(test) {
   test.expect(7)
 
   test.equal(typeof node.newNode, 'function')

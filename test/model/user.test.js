@@ -4,12 +4,13 @@ var paths = require('../../app/paths')
   , user = require('user')
 
 exports['User Session Store'] = function(test) {
-  test.expect(7)
+  test.expect(8)
 
   test.equal(typeof user.session, 'function')
   var key = 'Session key'
   var value = 'Session value'
 
+  test.equal(typeof user.session('Juzer'), 'object')
   test.equal(user.session('Juzer').exists, false)
   user.session('Juzer').init()
   test.equal(user.session('Juzer').exists, true)
@@ -20,7 +21,6 @@ exports['User Session Store'] = function(test) {
   test.equal(user.session({username: 'Juzer'}).get(key), value)
   test.equal(user.session({'Session key': value}).get('username'), 'Juzer')
   user.session('Juzer').kill()
-  
   test.equal(user.session('Juzer').exists, false)
   test.done()
 }
@@ -91,6 +91,7 @@ exports['User Disconnect'] = function(test) {
     test.equal(err, null)
     test.ok(offlineFor <= 3)
     test.ok(offlineFor >= 0)
+    user.session('Juzer').kill()
     test.done()
   })
 }
@@ -141,7 +142,7 @@ exports['User Try Resume'] = function(test) {
       // trying to resume the session after 3 minutes
       var newSocketId = 141241535354542324
       user.tryResume('Hablaba', newSocketId, function(err, username) {
-        test.equal(err, 'Session doesn\'t exists!')
+        test.equal(err, 'Nem voltál belépve ebben a környezetben!')
         user.tryResume(envId, newSocketId, function(err, username) {
           test.equal(username, 'Juzer')
           test.equal(user.session('Juzer').get('socketId'), newSocketId)
