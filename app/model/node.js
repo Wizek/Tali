@@ -4,6 +4,7 @@
  */
 var log = require('log')
   , db = require('db')
+  , helpers = require('helpers')
 
 /**
  * Global variable
@@ -67,8 +68,8 @@ exports.newNode = function(parentId, aboveId, userId, cb) {
   var abovePosition = 0
   var nextPosition = 0
   var that = this
-  var cb_afterPosition = function(abovePosition) {
-    that.newNode._sql_selectNextNode(parentId, abovePosition, function(err, result) {
+  var cbAfterPosition = function(abovePosition) {
+    that._sql_selectNextPosition(parentId, abovePosition, function(err, result) {
       if (Object.keys(result[0]).length == 0) {
         nextPosition = NODE_MAX_POSITION
       } else {
@@ -84,17 +85,17 @@ exports.newNode = function(parentId, aboveId, userId, cb) {
     })
   }
   if (aboveId == 0 || aboveId == null) {
-    cb_afterPosition(0)
+    cbAfterPosition(0)
   } else {
-    this.newNode._sql_selectPosition(parentId, aboveId, function(err, result) {
-      cb_afterPosition(result[0].position)
+    this._sql_selectPosition(parentId, aboveId, function(err, result) {
+      cbAfterPosition(result[0].position)
     })
   }
 }
 
-exports.newNode._sql_selectPosition = function(parentId, aboveId, cb) {
+exports._sql_selectPosition = function(parentId, aboveId, cb) {
   db.query('SELECT position FROM tali_node_hierarchy'
-  + ' WHERE parent_id = ? AND child_id=?'
+  + ' WHERE parent_id=? AND child_id=?'
   , [parentId, aboveId]
   , function(err, result) {
       return cb(err, result)
@@ -102,8 +103,8 @@ exports.newNode._sql_selectPosition = function(parentId, aboveId, cb) {
   )
 }
 
-exports.newNode._sql_selectNextNode = function(parentId, abovePosition, cb) {
-  db.query('SELECT child_id, position FROM tali_node_hierarchy'
+exports._sql_selectNextPosition = function(parentId, abovePosition, cb) {
+  db.query('SELECT position FROM tali_node_hierarchy'
   + ' WHERE parent_id=? AND position>?'
   + ' ORDER BY position ASC LIMIT 1'
   , [parentId, abovePosition]
@@ -122,10 +123,149 @@ exports.newNode._sql_createEmptyNode = function(cb) {
   )
 }
 
-exports.newNode._sql_saveHierarchy = function(parentId, newId, position, cb) {
+exports.newNode._sql_saveHierarchy = function(parentId, childId, position, cb) {
   db.query('INSERT INTO tali_node_hierarchy(parent_id, child_id, position)'
   + ' VALUES (?, ?, ?)'
-  , [parentId, newId, position]
+  , [parentId, childId, position]
+  , function(err, info) {
+      return cb(err, info)
+    }
+  )
+}
+
+/**
+ * Moving one or more nodes to an other location
+ * @param parentId {Number} Current parent of the moved nodes
+ * @param nodes {Array} Array of node IDs
+ * @param newParentId {Number} The new parent ID
+ * @param aboveId {Number} The ID of the node above the new location
+ * @param atomic {Boolean} If it's an atomic relocation, or tree-style relocation (with childs)
+ * @param cb {function} cb(err, newPositions)
+ */
+
+exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(parentId) != parentId)
+    return cb('ParentId must be a Number')
+
+  if (!Array.isArray(nodes))
+    return cb('Nodes must be an Array')
+
+  if (parseInt(newParentId) != newParentId)
+    return cb('NewParentId must be a Number')
+
+  if (parseInt(aboveId) != aboveId)
+    return cb('AboveId must be a Number')
+
+  if (typeof atomic != 'boolean')
+    return cb('Atomic must be a Boolean')
+
+  var that = this
+
+  var newPositions = {}
+  var setNodePositions = function(abovePosition, interval, cb) {
+    var currentPosition = abovePosition
+    // Only run the provided callback, when forCb() has been called 'nodes.length' times
+    var forCb = new helpers.asyncCbChecker(nodes.length, function(err) {
+      if (err) {
+        log.error(err)
+        return cb(err)
+      } else {
+        if (atomic) {
+          //moveChildsUp(nodes, cb)
+        } else {
+          return cb(null, newPositions)
+        }
+      }
+    })
+    for (var i = 0, len = nodes.length; i < len; i++) {
+      currentPosition+= interval
+      newPosition = Math.round(currentPosition)
+      newPositions[nodes[i]] = newPosition
+      that.move._sql_setPosition(parentId, nodes[i], newPosition, forCb)
+    }
+  }
+
+  /*var moveChildsUp = function(childs, newParent, cb) {
+    for (var i = 0, len = childs.length; i < len; i++) {
+      that.getLevel(childs[i], function(err, data) {
+        var childs = []
+        for (var j = 0, len1 = data.length; j < len1; j++) {
+          childs.push(data[j].id)
+        }
+        that.move._sql_setParents(childs, newParent, function(err, info) {
+          cb(err)
+        })
+      })
+    }
+  }*/
+
+  var cbAfterPosition = function(abovePosition) {
+    that._sql_selectNextPosition(parentId, abovePosition, function(err, result) {
+      if (err) {
+        log.error(err)
+        return cb('Database error')
+      } else {
+        var nextPosition = 0
+        if (Object.keys(result[0]).length == 0) {
+          nextPosition = NODE_MAX_POSITION
+        } else {
+          nextPosition = result[0].position
+        }
+        var interval = (nextPosition - abovePosition) / (nodes.length + 1)
+        if (interval < 1) {
+          // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
+        }
+        that.move._sql_setParents(parentId, nodes, newParentId, function(err, info) {
+          if (err) {
+            log.error(err)
+            return cb('Database error')
+          } else {
+            if (info.affectedRows != nodes.length) {
+              log.error('Update affected more or less rows than it should', info, nodes)
+              return cb('Database error')
+            } else {
+              setNodePositions(abovePosition, interval, cb)
+            }
+          }
+        })
+      }
+    })
+  }
+
+  if (aboveId == 0 || aboveId == null) {
+    cbAfterPosition(0)
+  } else {
+    that._sql_selectPosition(parentId, aboveId, function(err, result) {
+      if (err) {
+        log.error(err)
+        return cb('Database error')
+      } else {
+        cbAfterPosition(result[0].position)
+      }
+    })
+  }
+}
+
+exports.move._sql_setParents = function(parentId, nodes, newParentId, cb) {
+  db.query('UPDATE tali_node_hierarchy SET parent_id=?'
+  + ' WHERE child_id IN (' + nodes.join(',') + ')'
+  + ' AND parent_id=?'
+  , [newParentId, parentId]
+  , function(err, info) {
+      return cb(err, info)
+    }
+  )
+}
+
+exports.move._sql_setPosition = function(parentId, childId, newPosition, cb) {
+  db.query('UPDATE tali_node_hierarchy SET position=?'
+  + ' WHERE parent_id=? AND child_id=?'
+  , [newPosition, parentId, childId]
   , function(err, info) {
       return cb(err, info)
     }

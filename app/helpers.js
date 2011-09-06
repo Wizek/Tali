@@ -204,3 +204,26 @@ exports.extend = function extend(subClass, superClass) {
     superClass.prototype.constructor = superClass;
   }
 }
+
+/* TODO Maybe not the best, but working */
+exports.asyncCbChecker = function(runGoal, cb) {
+  this.cbCounter = 0
+  this.cbReal = cb
+  this.cbRunGoal = runGoal
+  this.errStore = []
+  var that = this
+  this.cb = function(err) {
+    that.cbCounter++
+    if (err) {
+      that.errStore.push(err)
+    }
+    if (that.cbCounter >= that.cbRunGoal) {
+      if (that.errStore.length > 0) {
+        return that.cbReal(errStore)
+      } else {
+        return that.cbReal(null)
+      }
+    }
+  }
+  return this.cb
+}
