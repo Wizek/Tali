@@ -13,16 +13,19 @@ var NODE_MAX_POSITION = 8388607
 
 /**
  * Get node level
- * @param id {Number} parent ID
+ * @param parentId {Number} parent ID
  * @param cb {function} cb(err, data)
  */
-exports.getLevel = function(id, cb) {
+exports.getLevel = function(parentId, cb) {
   cb = cb || function() {}
 
-  if (parseInt(id) != id)
-    return cb('A parent ID szám kell hogy legyen!')
+  if (typeof cb != 'function')
+    return
 
-  this.getLevel._sql_getLevel(id, function(err, results) {
+  if (parseInt(parentId) != parentId)
+    return cb('ParentId must be a Number')
+
+  this.getLevel._sql_getLevel(parentId, function(err, results) {
     if (err) {
       log.error(err)
       return cb('Database error')
@@ -32,14 +35,14 @@ exports.getLevel = function(id, cb) {
   })
 }
 
-exports.getLevel._sql_getLevel = function(id, cb) {
+exports.getLevel._sql_getLevel = function(parentId, cb) {
   db.query('SELECT tali_node.*, hierarchy.parent_id,'
         +' (SELECT count(child_id) FROM tali_node_hierarchy WHERE parent_id=tali_node.id) AS childnum'
         +' FROM tali_node'
         +' LEFT JOIN tali_node_hierarchy hierarchy ON hierarchy.child_id=tali_node.id'
         +' WHERE hierarchy.parent_id=?'
         +' ORDER BY hierarchy.position'
-  , [id]
+  , [parentId]
   , function(err, results) {
       return cb(err, results)
     }
@@ -56,14 +59,17 @@ exports.getLevel._sql_getLevel = function(id, cb) {
 exports.newNode = function(parentId, aboveId, userId, cb) {
   cb = cb || function() {}
 
+  if (typeof cb != 'function')
+    return
+
   if (parseInt(parentId) != parentId)
-    return cb('A parent ID szám kell hogy legyen!')
+    return cb('ParentId must be a Number')
 
   if (parseInt(aboveId) != aboveId)
-    return cb('Az above ID szám kell hogy legyen!')
+    return cb('AboveId must be a Number')
 
   if (parseInt(userId) != userId)
-    return cb('A user ID szám kell hogy legyen!')
+    return cb('UserId must be a Number')
 
   var abovePosition = 0
   var nextPosition = 0
@@ -282,14 +288,17 @@ exports.move._sql_setPosition = function(parentId, childId, newPosition, cb) {
 exports.editHeadline = function(id, newText, userId, cb) {
   cb = cb || function() {}
 
+  if (typeof cb != 'function')
+    return
+
   if (parseInt(id) != id)
-    return cb('A node ID szám kell hogy legyen!')
+    return cb('NodeId must be a Number')
 
   if (typeof newText != 'string')
-    return cb('Az új tartalom String kell hogy legyen!')
+    return cb('NewText must be a String')
 
-  if (typeof userId != 'number')
-    return cb('A userId-nek Number-nek kell lennie!')
+  if (parseInt(userId) != userId)
+    return cb('UserId must be a Number')
 
   this.editHeadline._sql_save(id, newText, function(err, result) {
     if (err) {
@@ -297,7 +306,7 @@ exports.editHeadline = function(id, newText, userId, cb) {
       return cb('Database error')
     } else {
       if (result.affectedRows != 1) {
-        return cb('Nem találom a node-ot!')
+        return cb('Node not found')
       }
       return cb()
     }
@@ -324,13 +333,13 @@ exports.editBody = function(id, newText, userId, cb) {
   cb = cb || function() {}
 
   if (parseInt(id) != id)
-    return cb('A node ID szám kell hogy legyen!')
+    return cb('NodeId must be a Number')
 
   if (typeof newText != 'string')
-    return cb('Az új tartalom String kell hogy legyen!')
+    return cb('NewText must be a String')
 
-  if (typeof userId != 'number')
-    return cb('A userId-nek Number-nek kell lennie!')
+  if (parseInt(userId) != userId)
+    return cb('UserId must be a Number')
 
   this.editBody._sql_save(id, newText, function(err, result) {
     if (err) {
@@ -338,7 +347,7 @@ exports.editBody = function(id, newText, userId, cb) {
       return cb('Database error')
     } else {
       if (result.affectedRows != 1) {
-        return cb('Nem találom a node-ot!')
+        return cb('Node not found')
       }
       return cb()
     }

@@ -33,16 +33,16 @@ exports['User Login'] = function (test) {
 
   test.doesNotThrow(function() {
     user.login(null, '', '', '0', function(err) {
-      test.equal(err, 'A felhasználónévnek egy Stringnek kell lennie!')
+      test.equal(err, 'Username must be a String')
     })
     user.login('', null, '', '0', function(err) {
-      test.equal(err, 'A jelszónak egy Stringnek kell lennie!')
+      test.equal(err, 'Password must be a String')
     })
     user.login('', '', null, '0', function(err) {
-      test.equal(err, 'Az envId-nek Stringnek kell lennie!')
+      test.equal(err, 'EnvId must be a String')
     })
     user.login('', '', '', null, function(err) {
-      test.equal(err, 'A socketId-nek Number-nek kell lennie!')
+      test.equal(err, 'SocketId must be a Number')
     })
   })
   
@@ -56,7 +56,7 @@ exports['User Login'] = function (test) {
   var envId = '0a1b2c3d4e5f'
   var socketId = '123456789012345678'
   user.login('Username', 'Password', envId, socketId, function(err) {
-    test.equal(err, 'Nem megfelelő felhasználónév és jelszó kombináció!')
+    test.equal(err, 'Wrong username and password combination')
   })
   user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
     test.equal(err, null)
@@ -64,7 +64,7 @@ exports['User Login'] = function (test) {
     test.equal(user.session('Juzer').get('socketId'), socketId)
   })
   user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
-    test.equal(err, 'Nem jelentkezhetsz be kétszer! Előbb jelentkezz ki!')
+    test.equal(err, 'You can not login twice')
   })
   user.session('Juzer').kill()
   test.done()
@@ -77,11 +77,11 @@ exports['User Disconnect'] = function(test) {
 
   test.doesNotThrow(function() {
     user.disconnect(null, function(err) {
-      test.equal(err, 'A socketId-nek Number-nek kell lennie!')
+      test.equal(err, 'SocketId must be a Number')
     })
   })
 
-  var socketId = '123456789012345678'
+  var socketId = 123456789012345678
   var mySession = user.session('Juzer')
   mySession.init()
   mySession.set('socketId', socketId)
@@ -122,10 +122,10 @@ exports['User Try Resume'] = function(test) {
 
   test.doesNotThrow(function() {
     user.tryResume(null, 0, function(err) {
-      test.equal(err, 'Az envId-nek Stringnek kell lennie!')
+      test.equal(err, 'EnvId must be a String')
     })
     user.tryResume('', null, function(err) {
-      test.equal(err, 'A socketId-nek Number-nek kell lennie!')
+      test.equal(err, 'NewSocketId must be a Number')
     })
   })
 
@@ -141,8 +141,8 @@ exports['User Try Resume'] = function(test) {
       var envId = user.session('Juzer').get('envId')
       // trying to resume the session after 3 minutes
       var newSocketId = 141241535354542324
-      user.tryResume('Hablaba', newSocketId, function(err, username) {
-        test.equal(err, 'Nem voltál belépve ebben a környezetben!')
+      user.tryResume('falseEnvironmentId', newSocketId, function(err, username) {
+        test.equal(err, 'You were not logged in at this environment')
         user.tryResume(envId, newSocketId, function(err, username) {
           test.equal(username, 'Juzer')
           test.equal(user.session('Juzer').get('socketId'), newSocketId)
@@ -161,7 +161,7 @@ exports['User Logout'] = function(test) {
 
   test.doesNotThrow(function() {
     user.logout(null, function(err) {
-      test.equal(err, 'Az envId-nek Stringnek kell lennie!')
+      test.equal(err, 'EnvId must be a String')
     })
   })
 
@@ -190,10 +190,10 @@ exports['User Set Focus'] = function(test) {
 
   test.doesNotThrow(function() {
     user.setFocus(null, '', function(err) {
-      test.equal(err, 'A node ID szám kell hogy legyen!')
+      test.equal(err, 'NodeId must be a Number')
     })
     user.setFocus(1, null, function(err) {
-      test.equal(err, 'A felhasználónévnek egy Stringnek kell lennie!')
+      test.equal(err, 'Username must be a String')
     })
   })
 
@@ -212,10 +212,10 @@ exports['User Lock Node'] = function(test) {
 
   test.doesNotThrow(function() {
     user.lock(null, '', function(err) {
-      test.equal(err, 'A node ID szám kell hogy legyen!')
+      test.equal(err, 'NodeId must be a Number')
     })
     user.lock(1, null, function(err) {
-      test.equal(err, 'A felhasználónévnek egy Stringnek kell lennie!')
+      test.equal(err, 'Username must be a String')
     })
   })
 
@@ -223,7 +223,7 @@ exports['User Lock Node'] = function(test) {
     test.equal(err, null)
     test.equal(user._onlineStore['Juzer']['lock'], 1)
     user.lock(1, 'Juzer2', function(err) {
-      test.equal(err, 'A node-ot már Juzer zárolta')
+      test.equal(err, 'Node already locked by Juzer')
       test.equal(user._onlineStore['Juzer']['lock'], 1)
       user._onlineStore['Juzer']['lock'] = null
       test.done()
@@ -232,10 +232,15 @@ exports['User Lock Node'] = function(test) {
 }
 
 exports['User Unlock All'] = function(test) {
-  test.expect(4)
+  test.expect(6)
 
   test.equal(typeof user.unlock, 'function')
 
+  test.doesNotThrow(function() {
+    user.unlock(null, function(err) {
+      test.equal(err, 'Username must be a String')
+    })
+  })
   user.lock(1, 'Juzer', function(err) {
     test.equal(err, null)
     user.unlock('Juzer', function(err) {
@@ -255,13 +260,13 @@ exports['User Register'] = function(test) {
 
   test.doesNotThrow(function() {
     user.register(null, '', '', function(err) {
-      test.equal(err, 'A felhasználónévnek egy Stringnek kell lennie!')
+      test.equal(err, 'Username must be a String')
     })
     user.register('', null, '', function(err) {
-      test.equal(err, 'A jelszónak egy Stringnek kell lennie!')
+      test.equal(err, 'Password must be a String')
     })
     user.register('', '', null, function(err) {
-      test.equal(err, 'Az e-mail címnek egy Stringnek kell lennie!')
+      test.equal(err, 'Email must be a String')
     })
   })
 
@@ -274,35 +279,27 @@ exports['User Register'] = function(test) {
   }
   user.register._sql_register = function(username, password_type, password, email, cb) {
     cb(null, {insertId: 1234})
-    /*
-    if (username == 'Fodi69'
-      && email == 'fodor0205@gmail.com'
-      && password == 'p4sSwrD') {
-        cb(null, [])
-      } else {
-        cb('Registration error')
-      }*/
   }
   user.register('t', 'test', 'test@test.hu', function(err) {
-    test.equal(err, 'A felhasználónév hosszának 2 év 16 karakter között kell lennie!')
+    test.equal(err, 'Username length must be within 2 and 16 character')
   })
   user.register('#ß÷%', 'test', 'test@test.hu', function(err) {
-    test.equal(err, 'A felhasználónév csak a magyar ábécé betűít és számokat tartalmazhat!')
+    test.equal(err, 'Username can only contain characters from the hungarian alphabet and numbers')
   })
   user.register('test', 'test', 'test@test.hu', function(err) {
-    test.equal(err, 'A jelszó hossza legalább 8 karakter legyen!')
+    test.equal(err, 'Password length must be at least 8 character')
   })
   user.register('test', 'testtest', 'test@test.hu', function(err) {
-    test.equal(err, 'A jelszónak legalább 1 számot kell tartalmaznia!')
+    test.equal(err, 'Password must contain at least 1 number')
   })
   user.register('test', 'testtest12', 'test@test', function(err) {
-    test.equal(err, 'Hibás e-mail cím!')
+    test.equal(err, 'Wrong email address')
   })
   user.register('test', 'testtest12', 'test.hu', function(err) {
-    test.equal(err, 'Hibás e-mail cím!')
+    test.equal(err, 'Wrong email address')
   })
   user.register('Fodi69', 'testtest12', 'test@test.hu', function(err) {
-    test.equal(err, 'A felhasználónév már foglalt!')
+    test.equal(err, 'This username is already taken')
   })
   user.register('test', 'testtest12', 'test@test.hu', function(err, userid) {
     test.equal(err, null)

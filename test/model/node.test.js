@@ -10,7 +10,7 @@ exports['Node get level'] = function(test) {
   test.equal(typeof node.getLevel._sql_getLevel, 'function')
   test.doesNotThrow(function() {
     node.getLevel(null, function(err) {
-      test.equal(err, 'A parent ID szám kell hogy legyen!')
+      test.equal(err, 'ParentId must be a Number')
     })
   })
 
@@ -34,13 +34,13 @@ exports['New node creation exists'] = function(test) {
   test.equal(typeof node._sql_selectNextPosition, 'function')
   test.doesNotThrow(function() {
     node.newNode(null, 1, 1, function(err) {
-      test.equal(err, 'A parent ID szám kell hogy legyen!')
+      test.equal(err, 'ParentId must be a Number')
     })
     node.newNode(1, null, 1, function(err) {
-      test.equal(err, 'Az above ID szám kell hogy legyen!')
+      test.equal(err, 'AboveId must be a Number')
     })
     node.newNode(1, 1, null, function(err) {
-      test.equal(err, 'A user ID szám kell hogy legyen!')
+      test.equal(err, 'UserId must be a Number')
     })
   })
   test.done()
@@ -238,13 +238,13 @@ exports['Node edit headline'] = function(test) {
   test.equal(typeof node.editHeadline._sql_save, 'function')
   test.doesNotThrow(function() {
     node.editHeadline(null, '', 1, function(err) {
-      test.equal(err, 'A node ID szám kell hogy legyen!')
+      test.equal(err, 'NodeId must be a Number')
     })
     node.editHeadline(1, null, 1, function(err) {
-      test.equal(err, 'Az új tartalom String kell hogy legyen!')
+      test.equal(err, 'NewText must be a String')
     })
     node.editHeadline(1, '', null, function(err) {
-      test.equal(err, 'A userId-nek Number-nek kell lennie!')
+      test.equal(err, 'UserId must be a Number')
     })
   })
 
@@ -257,13 +257,13 @@ exports['Node edit body'] = function(test) {
   test.equal(typeof node.editBody._sql_save, 'function')
   test.doesNotThrow(function() {
     node.editBody(null, '', 1, function(err) {
-      test.equal(err, 'A node ID szám kell hogy legyen!')
+      test.equal(err, 'NodeId must be a Number')
     })
     node.editBody(1, null, 1, function(err) {
-      test.equal(err, 'Az új tartalom String kell hogy legyen!')
+      test.equal(err, 'NewText must be a String')
     })
     node.editBody(1, '', null, function(err) {
-      test.equal(err, 'A userId-nek Number-nek kell lennie!')
+      test.equal(err, 'UserId must be a Number')
     })
   })
 

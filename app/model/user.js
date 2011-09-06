@@ -24,11 +24,11 @@ exports._sessionStore = {}
  */
 exports.session = function(search) {
   if (!search) {
-    log.error('SESSION: Nem adtál meg session kulcsszót')
+    log.error('SESSION: No searchterm was given')
     return
   }
   if (typeof search != 'string' && typeof search != 'object') {
-    log.error('SESSION: A kereséshez egy String (username) vagy egy objektum szükséges')
+    log.error('SESSION: Searchterm must be a String or an Object')
     return
   }
   // Quick search just by defining the username as string
@@ -41,12 +41,12 @@ exports.session = function(search) {
   var foundSessionKey = ''
   if (search.username) {
     if (!this._sessionStore[search.username]) {
-      //log.debug('SESSION: Nem található a keresett session:', search)
+      //log.debug('SESSION: Not found', search)
     }
     foundSessionKey = search.username
   } else {
     if (Object.keys(search).length != 1) {
-      log.error('SESSION: Csak egyetlen paraméterre kereshetsz a sessionben')
+      log.error('SESSION: Searchterm must contain only 1 term')
       return
     }
     // Extract the first key
@@ -65,7 +65,7 @@ exports.session = function(search) {
   obj.exists = this._sessionStore[foundSessionKey] ? true : false
   obj.init = function() {
     if (!foundSessionKey) {
-      log.error('SESSION: Így nem init-elhetsz session-t!')
+      log.error('SESSION: Wrong call of "init"')
       return
     }
     if (!this.exists) {
@@ -98,7 +98,7 @@ exports.session = function(search) {
 }
 
 /**
- * User login
+ * User login attempt with username and password
  * @param username {String}
  * @param password {String} Password unhashed
  * @param envId {String}
@@ -108,17 +108,20 @@ exports.session = function(search) {
 exports.login = function (username, password, envId, socketId, cb) {
   cb = cb || function() {}
 
+  if (typeof cb != 'function')
+    return
+
   if (typeof username != 'string')
-    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+    return cb('Username must be a String')
   
   if (typeof password != 'string')
-    return cb('A jelszónak egy Stringnek kell lennie!')
+    return cb('Password must be a String')
   
   if (typeof envId != 'string')
-    return cb('Az envId-nek Stringnek kell lennie!')
+    return cb('EnvId must be a String')
   
   if (parseInt(socketId) != socketId)
-    return cb('A socketId-nek Number-nek kell lennie!')
+    return cb('SocketId must be a Number')
   
   // TODO hash
   /*var sid = crypto
@@ -134,7 +137,7 @@ exports.login = function (username, password, envId, socketId, cb) {
     if (parseInt(result[0].count) > 0) {
       var mySession = that.session(username)
       if (mySession.get('envId') == envId) {
-        return cb('Nem jelentkezhetsz be kétszer! Előbb jelentkezz ki!')
+        return cb('You can not login twice')
       }
       var userId = result[0].id
       mySession.set('envId', envId)
@@ -147,7 +150,7 @@ exports.login = function (username, password, envId, socketId, cb) {
       }
       return cb(null, userId)
     } else {
-      return cb('Nem megfelelő felhasználónév és jelszó kombináció!')
+      return cb('Wrong username and password combination')
     }
   })
 }
@@ -168,8 +171,12 @@ exports.login._sql_login = function(username, password, cb) {
  */
 exports.disconnect = function(socketId, cb) {
   cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
   if (parseInt(socketId) != socketId)
-    return cb('A socketId-nek Number-nek kell lennie!')
+    return cb('SocketId must be a Number')
   
   var mySession = this.session({socketId: socketId})
   mySession.set('disconnectedAt', new Date())
@@ -186,8 +193,12 @@ exports.disconnect = function(socketId, cb) {
  */
 exports.offlineFor = function(username, cb) {
   cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
   if (typeof username != 'string')
-    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+    return cb('Username must be a String')
   
   if (this.session(username).get('disconnectedAt')) {
     // How many seconds since the disconnecting
@@ -227,15 +238,19 @@ exports.offlineFor._sql_getLastSeen = function(username, cb) {
  */
 exports.tryResume = function(envId, newSocketId, cb) {
   cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
   if (typeof envId != 'string')
-    return cb('Az envId-nek Stringnek kell lennie!')
+    return cb('EnvId must be a String')
   
   if (parseInt(newSocketId) != newSocketId)
-    return cb('A socketId-nek Number-nek kell lennie!')
+    return cb('NewSocketId must be a Number')
   
   var session = this.session({envId: envId})
   if (!session.exists) {
-    return cb('Nem voltál belépve ebben a környezetben!')
+    return cb('You were not logged in at this environment')
   }
   var username = session.get('username')
   var that = this
@@ -271,8 +286,12 @@ exports.tryResume = function(envId, newSocketId, cb) {
  */
 exports.logout = function(envId, cb) {
   cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
   if (typeof envId != 'string')
-    return cb('Az envId-nek Stringnek kell lennie!')
+    return cb('EnvId must be a String')
 
   username = this.session({envId: envId}).get('username')
   var self = this
@@ -293,21 +312,24 @@ exports.logout._sql_updateLastSeen = function(username, cb) {
 
 /**
  * Focus on node
- * @param id {Number} Node id to focus on
+ * @param nodeId {Number} Node id to focus on
  * @param username {String} Focuser
  * @param cb {function} cb(err)
  */
 
-exports.setFocus = function(id, username, cb) {
+exports.setFocus = function(nodeId, username, cb) {
   cb = cb || function() {}
 
-  if (parseInt(id) != id)
-    return cb('A node ID szám kell hogy legyen!')
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(nodeId) != nodeId)
+    return cb('NodeId must be a Number')
 
   if (typeof username != 'string')
-    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+    return cb('Username must be a String')
 
-  this._onlineStore[username]['focus'] = id
+  this._onlineStore[username]['focus'] = nodeId
   return cb()
 }
 
@@ -317,22 +339,25 @@ exports.setFocus = function(id, username, cb) {
  * @param username {String} Locker
  * @param cb {function} cb(err)
  */
-exports.lock = function(id, username, cb) {
+exports.lock = function(nodeId, username, cb) {
   cb = cb || function() {}
 
-  if (parseInt(id) != id)
-    return cb('A node ID szám kell hogy legyen!')
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(nodeId) != nodeId)
+    return cb('NodeId must be a Number')
 
   if (typeof username != 'string')
-    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+    return cb('Username must be a String')
 
   for (key in this._onlineStore) if (this._onlineStore.hasOwnProperty(key)) {
-    if (this._onlineStore[key]['lock'] == id) {
-      return cb('A node-ot már ' + key + ' zárolta')
+    if (this._onlineStore[key]['lock'] == nodeId) {
+      return cb('Node already locked by ' + key)
       break
     }
   }
-  this._onlineStore[username]['lock'] = id
+  this._onlineStore[username]['lock'] = nodeId
   return cb()
 }
 
@@ -344,8 +369,11 @@ exports.lock = function(id, username, cb) {
 exports.unlock = function(username, cb) {
   cb = cb || function() {}
 
+  if (typeof cb != 'function')
+    return
+
   if (typeof username != 'string')
-    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+    return cb('Username must be a String')
 
   this._onlineStore[username]['lock'] = null
   return cb()
@@ -361,34 +389,37 @@ exports.unlock = function(username, cb) {
 exports.register = function(username, password, email, cb) {
   cb = cb || function() {}
 
+  if (typeof cb != 'function')
+    return
+
   if (typeof username != 'string')
-    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+    return cb('Username must be a String')
   
   if (typeof password != 'string')
-    return cb('A jelszónak egy Stringnek kell lennie!')
+    return cb('Password must be a String')
   
   if (typeof email != 'string')
-    return cb('Az e-mail címnek egy Stringnek kell lennie!')
+    return cb('Email must be a String')
   
   if (username.length < 2 || username.length > 16)
-    return cb('A felhasználónév hosszának 2 év 16 karakter között kell lennie!')
+    return cb('Username length must be within 2 and 16 character')
   
   if (!username.match(/^[A-zÖÜÓŐÚÉÁŰÍöüóőúéáűí0-9]{2,32}$/))
-    return cb('A felhasználónév csak a magyar ábécé betűít és számokat tartalmazhat!')
+    return cb('Username can only contain characters from the hungarian alphabet and numbers')
   
   if (password.length < 8)
-    return cb('A jelszó hossza legalább 8 karakter legyen!')
+    return cb('Password length must be at least 8 character')
   
   if (!password.match(/\d/))
-    return cb('A jelszónak legalább 1 számot kell tartalmaznia!')
+    return cb('Password must contain at least 1 number')
   
   if (!email.match(/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/))
-    return cb('Hibás e-mail cím!')
+    return cb('Wrong email address')
   
   that = this
   this.register._sql_checkUsername(username, function(err, result) {
     if (result.length > 0) {
-      return cb('A felhasználónév már foglalt!')
+      return cb('This username is already taken')
     } else {
       that.register._sql_register(username, 'text', password, email
       , function(err, info) {
