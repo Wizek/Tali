@@ -55,7 +55,7 @@ exports['New node creation on top of current nodes'] = function(test) {
   node.newNode._sql_createEmptyNode = function(cb) {
     return cb(null, {insertId: 59})
   }
-  node.newNode._sql_saveHierarchy = function(parentId, newId, newPosition, cb) {
+  node._sql_saveHierarchy = function(parentId, newId, newPosition, cb) {
     return cb(null, {insertId: 44})
   }
 
@@ -79,7 +79,7 @@ exports['New node creation at the end of all nodes'] = function(test) {
   node.newNode._sql_createEmptyNode = function(cb) {
     return cb(null, {insertId: 59})
   }
-  node.newNode._sql_saveHierarchy = function(parentId, newId, newPosition, cb) {
+  node._sql_saveHierarchy = function(parentId, newId, newPosition, cb) {
     return cb(null, {insertId: 44})
   }
 
@@ -103,7 +103,7 @@ exports['New node creation at normal position'] = function(test) {
   node.newNode._sql_createEmptyNode = function(cb) {
     return cb(null, {insertId: 59})
   }
-  node.newNode._sql_saveHierarchy = function(parentId, newId, newPosition, cb) {
+  node._sql_saveHierarchy = function(parentId, newId, newPosition, cb) {
     return cb(null, {insertId: 44})
   }
 
@@ -230,6 +230,58 @@ exports['Moving node(s) tree-style in the same level'] = function(test) {
   test.expect(0)
   test.done()
 }*/
+
+exports['Node copiing'] = function(test) {
+  test.expect(11)
+
+  test.equal(typeof node.copy, 'function')
+  test.doesNotThrow(function() {
+    node.copy(null, [2], 3, 4, true, function(err) {
+      test.equal(err, 'ParentId must be a Number')
+    })
+    node.copy(1, null, 3, 4, true, function(err) {
+      test.equal(err, 'Nodes must be an Array')
+    })
+    node.copy(1, [2], null, 4, true, function(err) {
+      test.equal(err, 'NewParentId must be a Number')
+    })
+    node.copy(1, [2], 3, null, true, function(err) {
+      test.equal(err, 'AboveId must be a Number')
+    })
+    node.copy(1, [2], 3, 4, null, function(err) {
+      test.equal(err, 'Atomic must be a Boolean')
+    })
+  })
+
+  var copied = 5
+  node.copy._sql_copyNode = function(nodeId, cb) {
+    copied++
+    return cb(null, {lastInsertId: copied})
+  }
+  node._sql_selectPosition = function(parentId, childId, cb) {
+    return cb(null, [{position: 300}])
+  }
+  node._sql_selectNextPosition = function(parentId, abovePosition, cb) {
+    if (abovePosition == 300) {
+      return cb(null, [{position: 400}])
+    } else {
+      return cb(null, [{position: 800}])
+    }
+  }
+  var hierarchy_saved = 11
+  node._sql_saveHierarchy = function(parentId, childId, position, cb) {
+    hierarchy_saved++
+    return cb(null, {lastInsertId: hierarchy_saved})
+  }
+  node.copy(1, [2, 3], 4, 5, true, function(err, newNodeIds, newHierarchyIds, newPositions) {
+    test.equal(err, null)
+    test.deepEqual(newNodeIds, [6, 7])
+    test.deepEqual(newHierarchyIds, [12, 13])
+    test.deepEqual(newPositions, {'2': 333, '3': 367})
+  })
+
+  test.done()
+}
 
 exports['Node edit headline'] = function(test) {
   test.expect(6)

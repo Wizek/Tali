@@ -210,19 +210,30 @@ exports.asyncCbChecker = function(runGoal, cb) {
   this.cbCounter = 0
   this.cbReal = cb
   this.cbRunGoal = runGoal
-  this.errStore = []
+  this.argumentStore = []
   var that = this
   this.cb = function(err) {
     that.cbCounter++
-    if (err) {
-      that.errStore.push(err)
+    for (var i = 0, len = arguments.length; i < len; i++) {
+      if (that.argumentStore[i]) {
+        that.argumentStore[i].push(arguments[i])
+      } else {
+        that.argumentStore[i] = [arguments[i]]
+      }
     }
     if (that.cbCounter >= that.cbRunGoal) {
-      if (that.errStore.length > 0) {
-        return that.cbReal(errStore)
-      } else {
-        return that.cbReal(null)
+      for (var i = 0, len = that.argumentStore.length; i < len; i++) {
+        var allNull = true
+        for (var j = 0, len1 = that.argumentStore[i].length; j < len1; j++) {
+          if (that.argumentStore[i][j] != null) {
+            allNull = false
+          }
+        }
+        if (allNull) {
+          that.argumentStore[i] = null
+        }
       }
+      return that.cbReal.apply(null, that.argumentStore)
     }
   }
   return this.cb
