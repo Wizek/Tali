@@ -283,6 +283,73 @@ exports['Node copiing'] = function(test) {
   test.done()
 }
 
+exports['Measurement exists'] = function(test) {
+  test.expect(3)
+
+  test.equal(typeof node.measureImpact, 'function')
+  test.doesNotThrow(function() {
+    node.measureImpact(null, function(err) {
+      test.equal(err, 'ParentId must be a Number')
+    })
+  })
+
+  test.done()
+}
+
+exports['Measuring that just few nodes involved'] = function(test) {
+  test.expect(2)
+
+  node._sql_selectChildIds = function(parentIds, cb) {
+    if (parentIds.length == 1 && parentIds[0] == 1) {
+      return cb(null, [2, 3, 4, 5])
+    } else if (parentIds.length == 4
+      && parentIds[0] == 2 && parentIds[1] == 3
+      && parentIds[2] == 4 && parentIds[3] == 5)
+    {
+      var nodes = []
+      for (var i = 6; i < 56; i++) {
+        nodes.push(i)
+      }
+      return cb(null, nodes)
+    } else {
+      return cb(null, [])
+    }
+  }
+
+  node.measureImpact(1, function(err, isMany) {
+    test.equal(err, null)
+    test.equal(isMany, false)
+    test.done()
+  })
+}
+
+exports['Measuring that many nodes involved'] = function(test) {
+  test.expect(2)
+
+  node._sql_selectChildIds = function(parentIds, cb) {
+    if (parentIds.length == 1 && parentIds[0] == 1) {
+      return cb(null, [2, 3, 4, 5])
+    } else if (parentIds.length == 4
+      && parentIds[0] == 2 && parentIds[1] == 3
+      && parentIds[2] == 4 && parentIds[3] == 5)
+    {
+      var nodes = []
+      for (var i = 6; i < 156; i++) {
+        nodes.push(i)
+      }
+      return cb(null, nodes)
+    } else {
+      return cb(null, [])
+    }
+  }
+
+  node.measureImpact(1, function(err, isMany) {
+    test.equal(err, null)
+    test.equal(isMany, true)
+    test.done()
+  })
+}
+
 exports['Node edit headline'] = function(test) {
   test.expect(6)
 

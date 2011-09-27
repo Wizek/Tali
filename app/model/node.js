@@ -327,7 +327,19 @@ exports.copy = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
         if (atomic) {
           return cb(null, newNodeIds, newHierarchyIds, newPositions)
         } else {
-          // TODO
+          self.measureImpact(parentId, function(err, isMany) {
+            if (err) {
+              log.error(err)
+              return cb(err)
+            } else {
+              if (isMany) {
+                return cb('Trying to copy too many nodes, the maximum is 100')
+              } else {
+                //for (var i = 0; newNodeIds)
+                //var nodes = self.getLevel()
+              }
+            }
+          })
         }
       }
     })
@@ -394,6 +406,54 @@ exports.copy._sql_copyNode = function(nodeId, cb) {
   , [nodeId]
   , function(err, info) {
     return cb(err, info)
+  })
+}
+
+/**
+ * Measuring the impact of a cyclic operation on nodes
+ * This checks if the impact affects few or many nodes
+ * Currently many is defined as: 100 nodes
+ * @param parentId {Number} Node id to measure
+ * @param cb {function} cb(err, isMany)
+ */
+exports.measureImpact = function(parentId, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(parentId) != parentId)
+    return cb('ParentId must be a Number')
+
+  var foundNum = 0
+  var end = false
+  var nodes = [parentId]
+  while (foundNum < 100 && !end) {
+    this._sql_selectChildIds(nodes, function(err, result) {
+      if (err) {
+        log.error(err)
+        return cb('Database error')
+      } else {
+        if (result.length == 0) {
+          end = true
+        }
+        foundNum+= result.length
+        nodes = result
+      }
+    })
+  }
+  if (foundNum < 100) {
+    return cb(null, false)
+  } else {
+    return cb(null, true)
+  }
+}
+
+exports._sql_selectChildIds = function(parentIds, cb) {
+  db.query('SELECT child_id FROM tali_node'
+  + ' WHERE parent_id IN (' + parentIds.join(',') + ')'
+  , function(err, result) {
+    return cb(err, result)
   })
 }
 
