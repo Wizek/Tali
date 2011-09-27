@@ -228,12 +228,34 @@ exports.offlineFor._sql_getLastSeen = function(username, cb) {
 }
 
 /**
- * Try to resume to a session, which was started from this envId
+ * Check if the user is logged in on this environment or not
+ * @param envId {String}
+ * @param cb {function} cb(err, isLoggedIn)
+ */
+exports.isLoggedIn = function(envId, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (typeof envId != 'string')
+    return cb('EnvId must be a String')
+
+  var session = this.session(envId)
+  if (session.get('username')) {
+    return cb(null, true)
+  } else {
+    return cb('You were not logged in at this environment')
+  }
+}
+/**
+ * Resume to a session which was started from this envId,
+ * after the connection is alive
  * @param envId {String}
  * @param newSocketId {String} The current (new) socketId
  * @param cb {function} cb(err, username, userid, onlineList)
  */
-exports.tryResume = function(envId, newSocketId, cb) {
+exports.resume = function(envId, newSocketId, cb) {
   cb = cb || function() {}
 
   if (typeof cb != 'function')

@@ -238,3 +238,13 @@ exports.asyncCbChecker = function(runGoal, cb) {
   }
   return this.cb
 }
+
+exports.cookiesToObject = function(cookies) {
+  cookieArray = cookies.split(';')
+  cookieObj = {}
+  for (var i = 0, len = cookieArray.length; i < len; i++) {
+    cookieData = cookieArray[i].split('=')
+    cookieObj[cookieData[0]] = cookieData[1]
+  }
+  return cookieObj
+}

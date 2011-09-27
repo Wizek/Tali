@@ -123,38 +123,72 @@ exports['User Online'] = function(test) {
   test.done()
 }
 
-exports['User Try Resume'] = function(test) {
+exports['User is logged in'] = function(test) {
   test.expect(8)
 
-  test.equal(typeof user.tryResume, 'function')
+  test.equal(typeof user.isLoggedIn, 'function')
 
   test.doesNotThrow(function() {
-    user.tryResume(null, 0, function(err) {
+    user.isLoggedIn(null, function(err) {
       test.equal(err, 'EnvId must be a String')
     })
-    user.tryResume('', null, function(err) {
+  })
+
+  var envId    = '0a1b2c3d4e5f'
+    , socketId = 123456789012345678
+
+  user.isLoggedIn(envId, function(err, isLoggedIn) {
+    test.equal(err, 'You were not logged in at this environment')
+  })
+
+  user.login._sql_login = function(username, password, cb) {
+    if (username == 'Juzer' && password == 'p4sSwrD') {
+      return cb(null, [{count: 1, id: 1}])
+    } else {
+      return cb(null, [{count: 0}])
+    }
+  }
+
+  user.login('Juzer', 'p4sSwrD', envId, socketId, function(err, userId) {
+    test.equal(err, null)
+    test.equal(userId, 1)
+    user.isLoggedIn(envId, function(err, isLoggedIn) {
+      test.equal(err, null)
+      test.equal(isLoggedIn, true)
+      user.session(envId).kill()
+      test.done()
+    })
+  })
+}
+
+exports['User Resume'] = function(test) {
+  test.expect(8)
+
+  test.equal(typeof user.resume, 'function')
+
+  test.doesNotThrow(function() {
+    user.resume(null, 0, function(err) {
+      test.equal(err, 'EnvId must be a String')
+    })
+    user.resume('', null, function(err) {
       test.equal(err, 'NewSocketId must be a Number')
     })
   })
 
-  var envId = '0a1b2c3d4e5f'
-  var socketId = '123456789012345678'
-  user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
+  var envId    = '0a1b2c3d4e5f'
+    , socketId = 123456789012345678
+
+  user.login('Juzer', 'p4sSwrD', envId, socketId, function(err, userId) {
     test.equal(err, null)
     user.disconnect(socketId, function() {
-      user.session('Juzer').set('envId','0a1b2c3d4e5f')
-      user.session('Juzer').get('disconnectedAt').setMinutes(
-        user.session('Juzer').get('disconnectedAt').getMinutes() - 3
-      )
-      var envId = user.session('Juzer').get('envId')
-      // trying to resume the session after 3 minutes
-      var newSocketId = 141241535354542324
-      user.tryResume('falseEnvironmentId', newSocketId, function(err, username) {
+      var newEnvId    = '0a1b2c3d4e5g'
+        , newSocketId = '123456789012345679'
+      user.resume(newEnvId, newSocketId, function(err) {
         test.equal(err, 'You were not logged in at this environment')
-        user.tryResume(envId, newSocketId, function(err, username) {
-          test.equal(username, 'Juzer')
-          test.equal(user.session('Juzer').get('socketId'), newSocketId)
-          user.session('Juzer').kill()
+        user.resume(envId, newSocketId, function(err, onlineList) {
+          test.deepEqual(onlineList, {Juzer: { userId: 1, focus: null, lock: null }})
+          test.equal(user.session({username: 'Juzer'}).get('socketId'), newSocketId)
+          user.session(envId).kill()
           test.done()
         })
       })
@@ -178,7 +212,7 @@ exports['User Logout'] = function(test) {
   }
 
   var envId = '0a1b2c3d4e5f'
-  var socketId = '123456789012345678'
+  var socketId = 123456789012345678
   user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
     test.equal(err, null)
     user.logout(envId, function(err) {

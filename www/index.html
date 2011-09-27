@@ -11,11 +11,12 @@
     g.connReady = false
     getEnvID() // Just so we save those microseconds too!
     var socket = io.connect(location.origin)
+
     socket.on('connect', function () {
-      socket.emit('set envId', getEnvID().token, function(err, user) {
+      socket.emit('set envId', getEnvID().token, function(err, isLoggedIn) {
         g.connReady = true
         onConnectionReady()
-        if (user) {
+        if (isLoggedIn) {
           loggedIn()
         }
         // #16
@@ -59,6 +60,16 @@
     }
     function loggedIn () {
       $('form#loginBox').hide()
+      socket.of('/editor')
+        .on('connect_failed', function(reason) {
+          console.error('unable to connect to namespace', reason)
+        })
+        .on('connect', function() {
+          console.info('sucessfully established a connection with the namespace');
+        })
+        .on('error', function() {
+          console.log('BAZMEG, connect_failed kellett volna hogy legyen.')
+        })
     }
     
     function getEnvID (argument) {
