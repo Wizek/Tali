@@ -19,8 +19,8 @@ exports._sessionStore = {}
 
 /**
  * Get a row from the session store by a searchterm
- * @param search {object} String (for username) or any object
- * @return {object} with functions .init(), .get(), .set(), .kill()
+ * @param search {object} String (envId) or any object with one term
+ * @return {object} with functions .get(), .set(), .kill()
  */
 exports.session = function(search) {
   if (!search) {
@@ -31,22 +31,22 @@ exports.session = function(search) {
     log.error('SESSION: Searchterm must be a String or an Object')
     return
   }
-  // Quick search just by defining the username as string
+  // Quick search just by defining the envId as a string
   if (typeof search == 'string') {
     search = {
-      username: search
+      envId: search
     }
   }
   // This will be later the key of the found session
   var foundSessionKey = ''
-  if (search.username) {
-    if (!this._sessionStore[search.username]) {
-      //log.debug('SESSION: Not found', search)
+  if (search.envId) {
+    if (!this._sessionStore[search.envId]) {
+      this._sessionStore[search.envId] = {}
     }
-    foundSessionKey = search.username
+    foundSessionKey = search.envId
   } else {
     if (Object.keys(search).length != 1) {
-      log.error('SESSION: Searchterm must contain only 1 term')
+      log.error('SESSION: Searchterm can contain only 1 term')
       return
     }
     // Extract the first key
@@ -57,41 +57,31 @@ exports.session = function(search) {
         foundSessionKey = key
       }
     }
+    if (!foundSessionKey) {
+      return false
+    }
   }
  
+  var self = this
   // Creating the return object
   var obj = {}
-  var self = this
-  obj.exists = this._sessionStore[foundSessionKey] ? true : false
-  obj.init = function() {
-    if (!foundSessionKey) {
-      log.error('SESSION: Wrong call of "init"')
-      return
-    }
-    if (!this.exists) {
-      this.exists = true
-      self._sessionStore[foundSessionKey] = {}
-    }
-  }
   obj.get = function(key) {
     if (self._sessionStore[foundSessionKey]) {
-      if (key == 'username') {
+      if (key == 'envId') {
         return foundSessionKey
       } else if (self._sessionStore[foundSessionKey][key]) {
         return self._sessionStore[foundSessionKey][key]
       }
     }
+    return undefined
   }
   obj.set = function(key, value) {
-    if (!self._sessionStore[foundSessionKey]) {
-      this.init()
-    }
     self._sessionStore[foundSessionKey][key] = value
+    return obj
   }
   obj.kill = function() {
     if (self._sessionStore[foundSessionKey]) {
       delete self._sessionStore[foundSessionKey] // Kill it!
-      this.exists = false
     }
   }
   return obj
@@ -129,21 +119,28 @@ exports.login = function (username, password, envId, socketId, cb) {
     .update(Math.random().toString())
     .digest('base64')*/
   
-  var that = this
+  var self = this
   this.login._sql_login(username, password, function(err, result) {
-    if (err)
-      return cb(err)
-    
+    if (err) {
+      log.error(err)
+      return cb('Database error')
+    }
     if (parseInt(result[0].count) > 0) {
-      var mySession = that.session(username)
-      if (mySession.get('envId') == envId) {
+      if (otherSession = self.session({username: username})) {
+        if (otherSession.get('envId') != envId) {
+          // TODO we must disconnect the other user
+          otherSession.kill()
+        }
+      }
+      var mySession = self.session(envId)
+      if (mySession.get('username')) {
         return cb('You can not login twice')
       }
       var userId = result[0].id
-      mySession.set('envId', envId)
+      mySession.set('username', username)
       mySession.set('socketId', socketId)
       mySession.set('userId', userId)
-      that._onlineStore[username] = {
+      self._onlineStore[username] = {
         userId: userId
       , focus: null
       , lock: null
@@ -200,12 +197,12 @@ exports.offlineFor = function(username, cb) {
   if (typeof username != 'string')
     return cb('Username must be a String')
   
-  if (this.session(username).get('disconnectedAt')) {
+  if (this.session({username: username}).get('disconnectedAt')) {
     // How many seconds since the disconnecting
     offlineFor = Math.round(new Date().getTime() / 1000) -
-      Math.round(this.session(username).get('disconnectedAt').getTime() / 1000)
+      Math.round(this.session({username: username}).get('disconnectedAt').getTime() / 1000)
     return cb(null, offlineFor)
-  } else if (this.session(username).exists) {
+  } else if (this.session({username: username})) {
     return cb(null, -1)
   } else {
     this.offlineFor._sql_getLastSeen(username, function(err, result) {
@@ -248,35 +245,19 @@ exports.tryResume = function(envId, newSocketId, cb) {
   if (parseInt(newSocketId) != newSocketId)
     return cb('NewSocketId must be a Number')
   
-  var session = this.session({envId: envId})
-  if (!session.exists) {
+  var session = this.session(envId)
+  if (!session.get('username')) {
     return cb('You were not logged in at this environment')
   }
   var username = session.get('username')
-  var that = this
-  this.offlineFor(username, function(err, offlineFor) {
-    if (err) {
-      return cb(err)
-    }
-    // security is my passion :D
-    /*
-    if (offlineFor > 600) {
-      return cb('Session is over.')
-    }*/
-    if (offlineFor >= 0) {
-      session.set('socketId', newSocketId)
-
-      userId = session.get('userId')
-
-      that._onlineStore[username] = {
-        userId: userId
-      , focus: null
-      , lock: null
-      }
-      onlineList = that._onlineStore
-      return cb(null, username, userId, onlineList)
-    }
-  })
+    , userId   = session.get('userId')
+  session.set('socketId', newSocketId)
+  this._onlineStore[username] = {
+    userId: userId
+  , focus: null
+  , lock: null
+  }
+  return cb(null, this._onlineStore)
 }
 
 /**

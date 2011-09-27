@@ -7,21 +7,24 @@ exports['User Session Store'] = function(test) {
   test.expect(8)
 
   test.equal(typeof user.session, 'function')
-  var key = 'Session key'
-  var value = 'Session value'
+  var envId = '0a1b2c3d4e5f'
+  var socketId = 123456789012345678
 
-  test.equal(typeof user.session('Juzer'), 'object')
-  test.equal(user.session('Juzer').exists, false)
-  user.session('Juzer').init()
-  test.equal(user.session('Juzer').exists, true)
-  test.equal(user.session('Juzer').get('username'), 'Juzer')
-  user.session('Juzer').kill()
+  test.equal(typeof user.session(envId), 'object')
+  test.equal(typeof user.session({envId: envId}), 'object')
+  test.equal(user.session(envId).get('envId'), envId)
+  test.equal(user.session({username: 'Juzer'}), false)
+  test.equal(typeof user.session(envId).set('username', 'Juzer'), 'object')
+  test.equal(user.session(envId).get('username'), 'Juzer')
+  test.equal(user.session({username: 'Juzer'}).get('envId'), envId)
+  test.equal(typeof user.session(envId).set('socketId', socketId), 'object')
+  test.equal(user.session({socketId: socketId}).get('envId'), envId)
+  test.equal(user.session({socketId: socketId}).get('username'), 'Juzer')
+  user.session(envId).kill()
+  test.equal(user.session(envId).get('username'), undefined)
+  test.equal(user.session(envId).get('socketId'), undefined)
 
-  user.session('Juzer').set(key, value)
-  test.equal(user.session({username: 'Juzer'}).get(key), value)
-  test.equal(user.session({'Session key': value}).get('username'), 'Juzer')
-  user.session('Juzer').kill()
-  test.equal(user.session('Juzer').exists, false)
+  user.session(envId).kill()
   test.done()
 }
 
@@ -60,13 +63,22 @@ exports['User Login'] = function (test) {
   })
   user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
     test.equal(err, null)
-    test.equal(user.session('Juzer').get('envId'), envId)
-    test.equal(user.session('Juzer').get('socketId'), socketId)
+    test.equal(user.session(envId).get('username'), 'Juzer')
+    test.equal(user.session(envId).get('socketId'), socketId)
+    test.equal(user.session(envId).get('userId'), 1)
   })
   user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
     test.equal(err, 'You can not login twice')
   })
-  user.session('Juzer').kill()
+  var otherEnvId = '0a1b2c3d4e5g'
+  user.login('Juzer', 'p4sSwrD', otherEnvId, socketId, function(err) {
+    test.equal(err, null)
+    test.equal(user.session(envId).get('username'), undefined)
+    test.equal(user.session(envId).get('socketId'), undefined)
+    test.equal(user.session(envId).get('userId'), undefined)
+  })
+  user.session(envId).kill()
+  user.session(otherEnvId).kill()
   test.done()
 }
 
@@ -81,19 +93,15 @@ exports['User Disconnect'] = function(test) {
     })
   })
 
-  var socketId = 123456789012345678
-  var mySession = user.session('Juzer')
-  mySession.init()
+  var envId     = '0a1b2c3d4e5f'
+    , socketId  = 123456789012345678
+    , mySession = user.session(envId)
+
   mySession.set('socketId', socketId)
   user.disconnect(socketId)
-  //Ensure that he was in the last 3 seconds online
-  user.offlineFor('Juzer', function(err, offlineFor) {
-    test.equal(err, null)
-    test.ok(offlineFor <= 3)
-    test.ok(offlineFor >= 0)
-    user.session('Juzer').kill()
-    test.done()
-  })
+  test.equal(mySession.get('disconnectedAt'), new Date().toString())
+  user.session(envId).kill()
+  test.done()
 }
 
 exports['User Online'] = function(test) {
@@ -105,13 +113,13 @@ exports['User Online'] = function(test) {
     return cb(null, {lastSeen: new Date().toString()})
   }
   
-  user.session('Juzer').init()
+  var envId     = '0a1b2c3d4e5f'
+  user.session(envId).set('username', 'Juzer')
   user.offlineFor('Juzer', function(err, seconds) {
     test.equal(err, null)
-    // Still online
     test.equal(seconds, -1)
   })
-  user.session('Juzer').kill()
+  user.session(envId).kill()
   test.done()
 }
 
