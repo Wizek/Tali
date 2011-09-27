@@ -127,10 +127,50 @@ exports._sql_createHierarchy = function(parentId, childId, position, cb) {
   )
 }
 
-exports._sql_saveHierarchy = function(parentId, childId, position, cb) {
-  db.query('INSERT INTO tali_node_hierarchy(parent_id, child_id, position)'
-  + ' VALUES (?, ?, ?)'
-  , [parentId, childId, position]
+/**
+ * Create new node
+ * @param parentId {Number} parent ID
+ * @param aboveId {Number} ID of the node above the new node
+ * @param userId {Number} Creator
+ * @param cb {function} cb(err, nodeId, newPosition)
+ */
+exports.newNode = function(parentId, aboveId, userId, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(parentId) != parentId)
+    return cb('ParentId must be a Number')
+
+  if (parseInt(aboveId) != aboveId)
+    return cb('AboveId must be a Number')
+
+  if (parseInt(userId) != userId)
+    return cb('UserId must be a Number')
+
+  var self = this
+  this._selectPosition(parentId, aboveId, function(err, abovePosition) {
+    self._selectNextPosition(parentId, abovePosition, function(err, nextPosition) {
+      var newPosition = Math.round(abovePosition + (nextPosition - abovePosition) / 2)
+      self.newNode._sql_createEmptyNode(function(err, info) {
+        var newChildId = info.insertId
+        self._sql_createHierarchy(parentId, newChildId, newPosition, function(err) {
+          if (err) {
+            log.error(err)
+            return cb('Database error')
+          } else {
+            return cb(null, newChildId, newPosition)
+          }
+        })
+      })
+    })
+  })
+}
+
+exports.newNode._sql_createEmptyNode = function(cb) {
+  db.query('INSERT INTO tali_node(updated_at, created_at)'
+  + ' VALUES (now(), now())'
   , function(err, info) {
       return cb(err, info)
     }

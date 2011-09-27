@@ -27,11 +27,9 @@ exports['Node get level'] = function(test) {
 }
 
 exports['New node creation exists'] = function(test) {
-  test.expect(7)
+  test.expect(5)
 
   test.equal(typeof node.newNode, 'function')
-  test.equal(typeof node._sql_selectPosition, 'function')
-  test.equal(typeof node._sql_selectNextPosition, 'function')
   test.doesNotThrow(function() {
     node.newNode(null, 1, 1, function(err) {
       test.equal(err, 'ParentId must be a Number')
@@ -55,7 +53,7 @@ exports['New node creation on top of current nodes'] = function(test) {
   node.newNode._sql_createEmptyNode = function(cb) {
     return cb(null, {insertId: 59})
   }
-  node._sql_saveHierarchy = function(parentId, newId, newPosition, cb) {
+  node._sql_createHierarchy = function(parentId, newId, newPosition, cb) {
     return cb(null, {insertId: 44})
   }
 
@@ -79,7 +77,7 @@ exports['New node creation at the end of all nodes'] = function(test) {
   node.newNode._sql_createEmptyNode = function(cb) {
     return cb(null, {insertId: 59})
   }
-  node._sql_saveHierarchy = function(parentId, newId, newPosition, cb) {
+  node._sql_createHierarchy = function(parentId, newId, newPosition, cb) {
     return cb(null, {insertId: 44})
   }
 
