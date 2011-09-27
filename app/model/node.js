@@ -303,9 +303,6 @@ exports.move._sql_setPosition = function(parentId, childId, newPosition, cb) {
  * @param cb {function} cb(err)
  */
 exports.copy = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
-  // NO TREE-STYLE COPIING NOW - TODO
-  atomic = atomic ? true : null
-
   cb = cb || function() {}
 
   if (typeof cb != 'function')
@@ -363,7 +360,7 @@ exports.copy = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
       currentPosition+= interval
       var newPosition = Math.round(currentPosition)
       newPositions[nodes[i]] = newPosition
-      self._sql_saveHierarchy(newParentId, newNodeIds[i], newPosition, forCb)
+      self._sql_createHierarchy(newParentId, newNodeIds[i], newPosition, forCb)
     }
   }
   var getNextPosition = function(abovePosition, newNodeIds) {

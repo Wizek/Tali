@@ -4,7 +4,7 @@ var paths = require('../../app/paths')
   , user = require('user')
 
 exports['User Session Store'] = function(test) {
-  test.expect(8)
+  test.expect(13)
 
   test.equal(typeof user.session, 'function')
   var envId = '0a1b2c3d4e5f'
@@ -29,7 +29,7 @@ exports['User Session Store'] = function(test) {
 }
 
 exports['User Login'] = function (test) {
-  test.expect(12)
+  test.expect(17)
 
   test.equal(typeof user.login, 'function')
   test.equal(typeof user.login._sql_login, 'function')
@@ -51,13 +51,14 @@ exports['User Login'] = function (test) {
   
   user.login._sql_login = function(username, password, cb) {
     if (username == 'Juzer' && password == 'p4sSwrD') {
-      return cb(null, [{count: 1, userid: 1}])
+      return cb(null, [{count: 1, id: 1}])
     } else {
       return cb(null, [{count: 0}])
     }
   }
-  var envId = '0a1b2c3d4e5f'
-  var socketId = '123456789012345678'
+  var envId    = '0a1b2c3d4e5f'
+    , socketId = 123456789012345678
+
   user.login('Username', 'Password', envId, socketId, function(err) {
     test.equal(err, 'Wrong username and password combination')
   })
@@ -83,7 +84,7 @@ exports['User Login'] = function (test) {
 }
 
 exports['User Disconnect'] = function(test) {
-  test.expect(6)
+  test.expect(4)
 
   test.equal(typeof user.disconnect, 'function')
 
@@ -104,7 +105,7 @@ exports['User Disconnect'] = function(test) {
   test.done()
 }
 
-exports['User Online'] = function(test) {
+exports['User OfflineFor'] = function(test) {
   test.expect(3)
 
   test.equal(typeof user.offlineFor, 'function')
