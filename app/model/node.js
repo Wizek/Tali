@@ -7,9 +7,9 @@ var log = require('log')
   , helpers = require('helpers')
 
 /**
- * Global variable
+ * Constant for the maximum position
  */
-var NODE_MAX_POSITION = 8388607
+exports.MAX_POSITION = 8388607
 
 /**
  * Get node level
@@ -50,63 +50,60 @@ exports.getLevel._sql_getLevel = function(parentId, cb) {
 }
 
 /**
- * Make new node
+ * Select position of a node
+ * Returns 0 if the childId is 0
  * @param parentId {Number} parent ID
- * @param aboveId {Number} ID of the node above the new node
- * @param userId {Number} Creator
- * @param cb {function} cb(err, nodeId)
+ * @param childId {Number} node ID
+ * @param cb {function} cb(err, position)
  */
-exports.newNode = function(parentId, aboveId, userId, cb) {
-  cb = cb || function() {}
-
-  if (typeof cb != 'function')
-    return
-
-  if (parseInt(parentId) != parentId)
-    return cb('ParentId must be a Number')
-
-  if (parseInt(aboveId) != aboveId)
-    return cb('AboveId must be a Number')
-
-  if (parseInt(userId) != userId)
-    return cb('UserId must be a Number')
-
-  var abovePosition = 0
-  var nextPosition = 0
-  var self = this
-  var cbAfterPosition = function(abovePosition) {
-    self._sql_selectNextPosition(parentId, abovePosition, function(err, result) {
-      if (Object.keys(result[0]).length == 0) {
-        nextPosition = NODE_MAX_POSITION
-      } else {
-        nextPosition = result[0].position
-      }
-      var newPosition = Math.round(abovePosition + (nextPosition - abovePosition) / 2)
-      self.newNode._sql_createEmptyNode(function(err, result) {
-        var newId = result.insertId
-        self._sql_saveHierarchy(parentId, newId, newPosition, function(err, info) {
-          return cb(err, newId, newPosition)
-        })
-      })
-    })
-  }
-  if (aboveId == 0 || aboveId == null) {
-    cbAfterPosition(0)
+exports._selectPosition = function(parentId, childId, cb) {
+  if (childId == 0 || childId == null) {
+    return cb(null, 0)
   } else {
-    this._sql_selectPosition(parentId, aboveId, function(err, result) {
-      cbAfterPosition(result[0].position)
+    this._sql_selectPosition(parentId, childId, function(err, result) {
+      if (err) {
+        log.error(err)
+        return cb('Database error')
+      } else {
+        return cb(null, result[0].position)
+      }
     })
   }
 }
 
-exports._sql_selectPosition = function(parentId, aboveId, cb) {
+exports._sql_selectPosition = function(parentId, childId, cb) {
   db.query('SELECT position FROM tali_node_hierarchy'
   + ' WHERE parent_id=? AND child_id=?'
-  , [parentId, aboveId]
+  , [parentId, childId]
   , function(err, result) {
       return cb(err, result)
     }
   )
+}
+
+/**
+ * Select the next position after a given position
+ * Returns MAX_POSITION if there is nothing after the given position
+ * @param parentId {Number} parent ID
+ * @param abovePosition {Number} position above
+ * @param cb {function} cb(err, nextPosition)
+ */
+exports._selectNextPosition = function(parentId, abovePosition, cb) {
+  var self = this
+  this._sql_selectNextPosition(parentId, abovePosition, function(err, result) {
+    if (err) {
+      log.error(err)
+      return cb('Database error')
+    } else {
+      var nextPosition = 0
+      if (Object.keys(result[0]).length == 0) {
+        nextPosition = self.MAX_POSITION
+      } else {
+        nextPosition = result[0].position
+      }
+      return cb(null, nextPosition)
+    }
+  })
 }
 
 exports._sql_selectNextPosition = function(parentId, abovePosition, cb) {
@@ -120,9 +117,10 @@ exports._sql_selectNextPosition = function(parentId, abovePosition, cb) {
   )
 }
 
-exports.newNode._sql_createEmptyNode = function(cb) {
-  db.query('INSERT INTO tali_node(updated_at, created_at)'
-  + ' VALUES (now(), now())'
+exports._sql_createHierarchy = function(parentId, childId, position, cb) {
+  db.query('INSERT INTO tali_node_hierarchy(parent_id, child_id, position)'
+  + ' VALUES (?, ?, ?)'
+  , [parentId, childId, position]
   , function(err, info) {
       return cb(err, info)
     }
@@ -196,29 +194,25 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
     }
   }
 
-  /*var moveChildsUp = function(childs, newParent, cb) {
-    for (var i = 0, len = childs.length; i < len; i++) {
-      self.getLevel(childs[i], function(err, data) {
-        var childs = []
-        for (var j = 0, len1 = data.length; j < len1; j++) {
-          childs.push(data[j].id)
-        }
-        self.move._sql_setParents(childs, newParent, function(err, info) {
-          cb(err)
-        })
+  var setPositionOfMovedChilds = function() {
+    this.selectPosition(parentId, nodes[0], function(err, abovePosition) {
+      self._selectNextPosition(parentId, abovePosition, function(err, nextPosition) {
+        var interval = (nextPosition - abovePosition) / (nodes.length + 1)
       })
-    }
-  }*/
+    })
+  }
 
-  var cbAfterPosition = function(abovePosition) {
-    self._sql_selectNextPosition(newParentId, abovePosition, function(err, result) {
-      if (err) {
-        log.error(err)
-        return cb('Database error')
-      } else {
-        var nextPosition = 0
-        if (Object.keys(result[0]).length == 0) {
-          nextPosition = NODE_MAX_POSITION
+  var self = this
+  this._selectPosition(newParentId, aboveId, function(err, abovePosition) {
+    self._selectNextPosition(newParentId, abovePosition, function(err, nextPosition) {
+      var interval = (nextPosition - abovePosition) / (nodes.length + 1)
+      if (interval < 1) {
+        // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
+      }
+      self.move._sql_updateParents(parentId, nodes, newParentId, function(err, info) {
+        if (err) {
+          log.error(err)
+          return cb('Database error')
         } else {
           nextPosition = result[0].position
         }
@@ -346,12 +340,12 @@ exports.copy = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
     var newPositions = {}
     for (var i = 0, len = newNodeIds.length; i < len; i++) {
       currentPosition+= interval
-      newPosition = Math.round(currentPosition)
+      var newPosition = Math.round(currentPosition)
       newPositions[nodes[i]] = newPosition
       self._sql_saveHierarchy(newParentId, newNodeIds[i], newPosition, forCb)
     }
   }
-  var cbAfterPosition = function(abovePosition, newNodeIds) {
+  var getNextPosition = function(abovePosition, newNodeIds) {
     self._sql_selectNextPosition(newParentId, abovePosition, function(err, result) {
       if (err) {
         log.error(err)
@@ -359,7 +353,7 @@ exports.copy = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
       } else {
         var nextPosition = 0
         if (Object.keys(result[0]).length == 0) {
-          nextPosition = NODE_MAX_POSITION
+          nextPosition = self.MAX_POSITION
         } else {
           nextPosition = result[0].position
         }
@@ -384,14 +378,14 @@ exports.copy = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
       return cb('Database error')
     }
     if (aboveId == 0 || aboveId == null) {
-      cbAfterPosition(0, newNodeIds)
+      getNextPosition(0, newNodeIds)
     } else {
       self._sql_selectPosition(newParentId, aboveId, function(err, result) {
         if (err) {
           log.error(err)
           return cb('Database error')
         } else {
-          cbAfterPosition(result[0].position, newNodeIds)
+          getNextPosition(result[0].position, newNodeIds)
         }
       })
     }

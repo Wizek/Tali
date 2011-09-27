@@ -186,15 +186,62 @@ exports['Moving node(s) tree-style in the same level'] = function(test) {
     return cb(null, {affectedRows: nodes.length})
   }
   node.move._sql_setPosition = function(parentId, childId, newPosition, cb) {
-    Run._sql_setPosition++
     return cb(null, {affectedRows: 1})
   }
 
   node.move(1, [2, 3], 1, 4, false, function(err, newPositions) {
     test.equal(err, null)
     test.deepEqual(newPositions, {'2': 333, '3': 367})
-    test.equal(Run._sql_setParents, 1)
-    test.equal(Run._sql_setPosition, 2)
+
+    test.done()
+  })
+}
+
+exports['Moving nodes tree-style to an other level'] = function(test) {
+  /*
+   * Tested structure
+   * - nodeId (position)
+   * - 1 (200)
+   *   - 2 (100)
+   *     - 7 (300)
+   *       - 10 (300)
+   *     - 8 (450)
+   *   - 3 (200)
+   *     - 9 (300)
+   *   - 4 (300)
+   *   - 5 (400)
+   *   - 6 (500)
+   *
+   * Waited structure
+   * - 1 (200)
+   *   - 3 (200)
+   *     - 9 (300)
+   *     - 2 (350)
+   *       - 7 (300)
+   *         -10 (300)
+   *       - 8 (450)
+   *   - 4 (300)
+   *   - 5 (400)
+   *   - 6 (500)
+   */
+  test.expect(2)
+
+  node._sql_selectPosition = function(parentId, aboveId, cb) {
+    return cb(null, [{position: 300}])
+  }
+  node._sql_selectNextPosition = function(parentId, abovePosition, cb) {
+    return cb(null, [{position: node.MAX_POSITION}])
+  }
+  node.move._sql_updateParents = function(parentId, nodes, newParentId, cb) {
+    return cb(null, {affectedRows: nodes.length})
+  }
+  node.move._sql_setPosition = function(parentId, childId, newPosition, cb) {
+    return cb(null, {affectedRows: 1})
+  }
+
+  node.move(1, [2], 3, 9, false, function(err, newPositions) {
+    test.equal(err, null)
+    test.deepEqual(newPositions, {'2': 4194454})
 
     test.done()
   })
