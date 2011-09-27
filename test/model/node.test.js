@@ -113,12 +113,10 @@ exports['New node creation at normal position'] = function(test) {
   })
 }
 
-exports['Moving node(s) exists'] = function(test) {
-  test.expect(9)
+exports['Node moving exists'] = function(test) {
+  test.expect(7)
 
   test.equal(typeof node.move, 'function')
-  test.equal(typeof node.move._sql_setParents, 'function')
-  test.equal(typeof node.move._sql_setPosition, 'function')
   test.doesNotThrow(function() {
     node.move(null, [2], 1, 3, true, function(err) {
       test.equal(err, 'ParentId must be a Number')
@@ -140,7 +138,7 @@ exports['Moving node(s) exists'] = function(test) {
   test.done()
 }
 
-exports['Moving node(s) tree-style in the same level'] = function(test) {
+exports['Moving nodes tree-style in the same level'] = function(test) {
   /*
    * Tested structure
    * - nodeId (position)
@@ -167,11 +165,7 @@ exports['Moving node(s) tree-style in the same level'] = function(test) {
    *   - 5 (400)
    *   - 6 (500)
    */
-  test.expect(4)
-
-  var Run = {}
-  Run._sql_setParents = 0
-  Run._sql_setPosition = 0
+  test.expect(2)
 
   node._sql_selectPosition = function(parentId, aboveId, cb) {
     return cb(null, [{position: 300}])
@@ -179,8 +173,7 @@ exports['Moving node(s) tree-style in the same level'] = function(test) {
   node._sql_selectNextPosition = function(parentId, abovePosition, cb) {
     return cb(null, [{position: 400}])
   }
-  node.move._sql_setParents = function(parentId, nodes, newParentId, cb) {
-    Run._sql_setParents++
+  node.move._sql_updateParents = function(parentId, nodes, newParentId, cb) {
     return cb(null, {affectedRows: nodes.length})
   }
   node.move._sql_setPosition = function(parentId, childId, newPosition, cb) {

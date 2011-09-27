@@ -208,29 +208,13 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
   if (typeof atomic != 'boolean')
     return cb('Atomic must be a Boolean')
 
-  var self = this
-
-  var newPositions = {}
-  var setNodePositions = function(abovePosition, interval, cb) {
-    var currentPosition = abovePosition
-    // Only run the provided callback, when forCb() has been called 'nodes.length' times
-    var forCb = new helpers.asyncCbChecker(nodes.length, function(err) {
-      if (err) {
-        log.error(err)
-        return cb(err)
-      } else {
-        if (atomic) {
-          //moveChildsUp(nodes, cb)
-        } else {
-          return cb(null, newPositions)
-        }
-      }
-    })
+  var moveChildsUp = function(nodes, newParent, cb) {
     for (var i = 0, len = nodes.length; i < len; i++) {
-      currentPosition+= interval
-      newPosition = Math.round(currentPosition)
-      newPositions[nodes[i]] = newPosition
-      self.move._sql_setPosition(parentId, nodes[i], newPosition, forCb)
+      self.getLevel(nodes[i], function(err, childs) {
+        self.move._sql_updateParents(nodes[i], childs, newParent, function(err, info) {
+          return cb(err)
+        })
+      })
     }
   }
 
@@ -254,44 +238,41 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
           log.error(err)
           return cb('Database error')
         } else {
-          nextPosition = result[0].position
-        }
-        var interval = (nextPosition - abovePosition) / (nodes.length + 1)
-        if (interval < 1) {
-          // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
-        }
-        self.move._sql_setParents(parentId, nodes, newParentId, function(err, info) {
-          if (err) {
-            log.error(err)
+          if (info.affectedRows != nodes.length) {
+            log.error('Update affected more or less rows than it should', info, nodes)
             return cb('Database error')
           } else {
-            if (info.affectedRows != nodes.length) {
-              log.error('Update affected more or less rows than it should', info, nodes)
-              return cb('Database error')
-            } else {
-              setNodePositions(abovePosition, interval, cb)
+            var newPositions = {}
+            var currentPosition = abovePosition
+            // Only run the provided callback, when forCb() has been called 'nodes.length' times
+            var forCb = new helpers.asyncCbChecker(nodes.length, function(err) {
+              if (err) {
+                log.error(err)
+                return cb(err)
+              } else {
+                if (!atomic) {
+                  return cb(null, newPositions)
+                } else {
+                  moveChildsUp(nodes, parentId, function(err) {
+                    setPositionOfMovedChilds(nodes)
+                  })
+                }
+              }
+            })
+            for (var i = 0, len = nodes.length; i < len; i++) {
+              currentPosition+= interval
+              newPosition = Math.round(currentPosition)
+              newPositions[nodes[i]] = newPosition
+              self.move._sql_setPosition(parentId, nodes[i], newPosition, forCb)
             }
           }
-        })
-      }
+        }
+      })
     })
-  }
-
-  if (aboveId == 0 || aboveId == null) {
-    cbAfterPosition(0)
-  } else {
-    self._sql_selectPosition(newParentId, aboveId, function(err, result) {
-      if (err) {
-        log.error(err)
-        return cb('Database error')
-      } else {
-        cbAfterPosition(result[0].position)
-      }
-    })
-  }
+  })
 }
 
-exports.move._sql_setParents = function(parentId, childIds, newParentId, cb) {
+exports.move._sql_updateParents = function(parentId, childIds, newParentId, cb) {
   db.query('UPDATE tali_node_hierarchy SET parent_id=?'
   + ' WHERE child_id IN (' + childIds.join(',') + ')'
   + ' AND parent_id=?'
