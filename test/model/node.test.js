@@ -299,7 +299,7 @@ exports['Moving node(s) atomic in the same level'] = function(test) {
     }
     return cb('Test error')
   }
-  node._sql_selectPreviousPosition = function(parentId, nextPosition, cb) {
+  node._sql_selectAbovePosition = function(parentId, nextPosition, cb) {
     if (parentId == 1 && nextPosition == 200) {
       return cb(null, [{position: 100}])
     }
@@ -378,7 +378,7 @@ exports['Moving node(s) atomic to an upper level'] = function(test) {
     }
     return cb('Test error')
   }
-  node._sql_selectPreviousPosition = function(parentId, nextPosition, cb) {
+  node._sql_selectAbovePosition = function(parentId, nextPosition, cb) {
     if (parentId == 3 && nextPosition == 400) {
       return cb(null, [{position: 300}])
     }

@@ -50,13 +50,18 @@ exports.getLevel._sql_getLevel = function(parentId, cb) {
 }
 
 /**
- * Select position of a node
+ * Get position of a node
  * Returns 0 if the childId is 0
  * @param parentId {Number} parent ID
  * @param childId {Number} node ID
  * @param cb {function} cb(err, position)
  */
-exports._selectPosition = function(parentId, childId, cb) {
+exports._getPosition = function(parentId, childId, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
   if (childId == 0 || childId == null) {
     return cb(null, 0)
   } else {
@@ -65,7 +70,12 @@ exports._selectPosition = function(parentId, childId, cb) {
         log.error(err)
         return cb('Database error')
       } else {
-        return cb(null, result[0].position)
+        if (result.length == 0 || !result[0].hasOwnProperty('position')) {
+          log.error('Failed to get position of node ' + childId + ' - parent ' + parentId)
+          return cb('Node not exists')
+        } else {
+          return cb(null, result[0].position)
+        }
       }
     })
   }
@@ -82,29 +92,33 @@ exports._sql_selectPosition = function(parentId, childId, cb) {
 }
 
 /**
- * Select previous position before a given position
+ * Get position above a given position
  * Returns 0 if there is nothing before the given position
  * @param parentId {Number} parent ID
  * @param nextPosition {Number} position
- * @param cb {function} cb(err, previousPosition)
+ * @param cb {function} cb(err, abovePosition)
  */
-exports._selectPreviousPosition = function(parentId, nextPosition, cb) {
-  var self = this
-  this._sql_selectPreviousPosition(parentId, nextPosition, function(err, result) {
+exports._getAbovePosition = function(parentId, nextPosition, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  this._sql_selectAbovePosition(parentId, nextPosition, function(err, result) {
     if (err) {
       log.error(err)
       return cb('Database error')
     } else {
-      var previousPosition = 0
+      var abovePosition = 0
       if (Object.keys(result[0]).length != 0) {
-        previousPosition = result[0].position
+        abovePosition = result[0].position
       }
     }
-    return cb(null, previousPosition)
+    return cb(null, abovePosition)
   })
 }
 
-exports._sql_selectPreviousPosition = function(parentId, nextPosition, cb) {
+exports._sql_selectAbovePosition = function(parentId, nextPosition, cb) {
   db.query('SELECT position FROM tali_node_hierarchy'
   + ' WHERE parent_id=? AND position<?'
   + ' ORDER BY position DESC LIMIT 1'
@@ -115,14 +129,14 @@ exports._sql_selectPreviousPosition = function(parentId, nextPosition, cb) {
   )
 }
 /**
- * Select the next position after a given position
+ * Get the next position after a given position
  * Returns MAX_POSITION if there is nothing after the given position
  * @param parentId {Number} parent ID
  * @param abovePosition {Number} position above
  * @param cb {function} cb(err, nextPosition)
  */
-exports._selectNextPosition = function(parentId, abovePosition, cb) {
-  var self = this
+exports._getNextPosition = function(parentId, abovePosition, cb) {
+  var _self = this
   this._sql_selectNextPosition(parentId, abovePosition, function(err, result) {
     if (err) {
       log.error(err)
@@ -130,7 +144,7 @@ exports._selectNextPosition = function(parentId, abovePosition, cb) {
     } else {
       var nextPosition = 0
       if (Object.keys(result[0]).length == 0) {
-        nextPosition = self.MAX_POSITION
+        nextPosition = _self.MAX_POSITION
       } else {
         nextPosition = result[0].position
       }
@@ -182,13 +196,13 @@ exports.newNode = function(parentId, aboveId, userId, cb) {
   if (parseInt(userId) != userId)
     return cb('UserId must be a Number')
 
-  var self = this
+  var _self = this
   this._selectPosition(parentId, aboveId, function(err, abovePosition) {
-    self._selectNextPosition(parentId, abovePosition, function(err, nextPosition) {
+    _self._selectNextPosition(parentId, abovePosition, function(err, nextPosition) {
       var newPosition = Math.round(abovePosition + (nextPosition - abovePosition) / 2)
-      self.newNode._sql_createEmptyNode(function(err, info) {
+      _self.newNode._sql_createEmptyNode(function(err, info) {
         var newChildId = info.insertId
-        self._sql_createHierarchy(parentId, newChildId, newPosition, function(err) {
+        _self._sql_createHierarchy(parentId, newChildId, newPosition, function(err) {
           if (err) {
             log.error(err)
             return cb('Database error')
@@ -263,13 +277,13 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
   var setPositionOfMovedChilds = function(nodeIds, newPositions) {
     var firstNode = nodes[0]
     self._selectPosition(parentId, firstNode, function(err, position) {
-      self._selectPreviousPosition(parentId, position, function(err, previousPosition) {
+      self._selectabovePosition(parentId, position, function(err, abovePosition) {
         var lastNode = nodes.pop()
         self._selectPosition(parentId, lastNode, function(err, position) {
           self._selectNextPosition(parentId, position, function(err, nextPosition) {
-            var interval = (nextPosition - previousPosition) / (nodeIds.length + 1)
+            var interval = (nextPosition - abovePosition) / (nodeIds.length + 1)
             console.log('nextPosition', nextPosition)
-            console.log('previousPosition', previousPosition)
+            console.log('abovePosition', abovePosition)
             console.log('interval', interval)
             if (interval < 1) {
               // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
@@ -290,7 +304,7 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
               }
             })
             var newChildPositions = {}
-            var currentChildPosition = previousPosition
+            var currentChildPosition = abovePosition
             for (var i = 0, len = nodeIds.length; i < len; i++) {
               currentChildPosition+= interval
               var newChildPosition = Math.round(currentChildPosition)
