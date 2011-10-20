@@ -244,36 +244,160 @@ exports['Moving nodes tree-style to an other level'] = function(test) {
   })
 }
 
-/*exports['Moving node(s) atomic in the same level'] = function(test) {
+exports['Moving node(s) atomic in the same level'] = function(test) {
   /*
-   * Tested structure
-   * - nodeId (position)
-   * - 1 (200)
-   *   - 2 (100)
-   *     - 7 (300)
-   *       - 10 (300)
-   *     - 8 (450)
-   *   - 3 (200)
-   *     - 9 (300)
-   *   - 4 (300)
-   *   - 5 (400)
-   *   - 6 (500)
-   *
-   * Waited structure
-   * - 1 (200)
-   *   - 4 (300)
-   *   - 2 (333)
-   *   - 3 (367)
-   *   - 5 (400)
-   *   - 6 (500)
-   *   - 7 (533)
-   *     - 10(300)
-   *   - 8 (567)
-   *   - 9 (583)
-   * /
-  test.expect(0)
-  test.done()
-}*/
+   * Atomic moving nodes [3, 4] after 6
+   * Tested structure       Waited structure
+   * - nodeId (position)    - nodeId (position)
+   * - 1 (200)              - 1 (200)
+   *   - 2 (100)              - 2 (100)
+   *   - 3 (200)              - 8 (175)
+   *     - 8 (300)              - 10 (300)
+   *       - 10 (300)         - 9 (250)
+   *     - 9 (450)            - 11 (325)
+   *   - 4 (300)              - 5 (400)
+   *     - 11 (300)           - 6 (500)
+   *   - 5 (400)              - 3 (533)
+   *   - 6 (500)              - 4 (567)
+   *   - 7 (600)              - 7 (600)
+   */
+  test.expect(2)
+
+  node._sql_selectPosition = function(parentId, childId, cb) {
+    if (parentId == 1 && childId == 6) {
+      return cb(null, [{position: 500}])
+    }
+    if (parentId == 1 && childId == 3) {
+      return cb(null, [{position: 200}])
+    }
+    if (parentId == 1 && childId == 4) {
+      return cb(null, [{position: 300}])
+    }
+    return cb('Test error')
+  }
+  node._sql_selectNextPosition = function(parentId, abovePosition, cb) {
+    if (parentId == 1 && abovePosition == 500) {
+      return cb(null, [{position: 600}])
+    }
+    if (parentId == 1 && abovePosition == 300) {
+      return cb(null, [{position: 400}])
+    }
+    return cb('Test error')
+  }
+  node.move._sql_updateParents = function(parentId, nodes, newParentId, cb) {
+    return cb(null, {affectedRows: nodes.length})
+  }
+  node.move._sql_setPosition = function(parentId, childId, newPosition, cb) {
+    return cb(null, {affectedRows: 1})
+  }
+  node.getLevel = function(parentId, cb) {
+    if (parentId == 3) {
+      return cb(null, [{'id': 8}, {'id': 9}])
+    }
+    if (parentId == 4) {
+      return cb(null, [{'id': 11}])
+    }
+    return cb('Test error')
+  }
+  node._sql_selectPreviousPosition = function(parentId, nextPosition, cb) {
+    if (parentId == 1 && nextPosition == 200) {
+      return cb(null, [{position: 100}])
+    }
+    return cb('Test error')
+  }
+
+  node.move(1, [3, 4], 1, 6, true, function(err, newPositions) {
+    test.equal(err, null)
+    test.deepEqual(newPositions,
+      {
+        '3': 533
+      , '4': 567
+      , '8': 175
+      , '9': 250
+      , '11': 325
+      }
+    )
+    test.done()
+  })
+}
+
+exports['Moving node(s) atomic to an upper level'] = function(test) {
+  /*
+   * Atomic moving nodes [8, 9] under 1 after 5
+   * Tested structure       Waited structure
+   * - nodeId (position)    - nodeId (position)
+   * - 1 (200)              - 1 (200)
+   *   - 2 (100)              - 2 (100)
+   *   - 3 (200)              - 3 (200)
+   *     - 7 (300)              - 7 (300)
+   *     - 8 (400)              - 11 (375)
+   *       - 11 (300)           - 12 (450)
+   *       - 12 (450)           - 13 (525)
+   *     - 9 (500)              - 10 (600)
+   *       - 13 (300)         - 4 (300)
+   *     - 10 (600)           - 5 (400)
+   *   - 4 (300)              - 8 (433)
+   *   - 5 (400)              - 9 (467)
+   *   - 6 (500)              - 6 (500)
+   */
+  test.expect(-1)
+
+  node._sql_selectPosition = function(parentId, childId, cb) {
+    if (parentId == 1 && childId == 5) {
+      return cb(null, [{position: 400}])
+    }
+    if (parentId == 3 && childId == 7) {
+      return cb(null, [{position: 300}])
+    }
+    if (parentId == 3 && childId == 10) {
+      return cb(null, [{position: 600}])
+    }
+    return cb('Test error')
+  }
+  node._sql_selectNextPosition = function(parentId, abovePosition, cb) {
+    if (parentId == 1 && abovePosition == 400) {
+      return cb(null, [{position: 500}])
+    }
+    if (parentId == 3 && abovePosition == 450) {
+      return cb(null, [{position: 600}])
+    }
+    return cb('Test error')
+  }
+  node.move._sql_updateParents = function(parentId, nodes, newParentId, cb) {
+    return cb(null, {affectedRows: nodes.length})
+  }
+  node.move._sql_setPosition = function(parentId, childId, newPosition, cb) {
+    return cb(null, {affectedRows: 1})
+  }
+  node.getLevel = function(parentId, cb) {
+    if (parentId == 8) {
+      return cb(null, [{'id': 11}, {'id': 12}])
+    }
+    if (parentId == 9) {
+      return cb(null, [{'id': 13}])
+    }
+    return cb('Test error')
+  }
+  node._sql_selectPreviousPosition = function(parentId, nextPosition, cb) {
+    if (parentId == 3 && nextPosition == 400) {
+      return cb(null, [{position: 300}])
+    }
+    return cb('Test error')
+  }
+  node.move(3, [8, 9], 1, 5, true, function(err, newPositions) {
+    test.equal(err, null)
+    test.deepEqual(newPositions,
+      {
+        '8': 433
+      , '9': 467
+      , '11': 375
+      , '12': 450
+      , '13': 525
+      }
+    )
+    test.done()
+  })
+}
 
 exports['Node copiing'] = function(test) {
   test.expect(11)
