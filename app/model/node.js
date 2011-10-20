@@ -82,6 +82,39 @@ exports._sql_selectPosition = function(parentId, childId, cb) {
 }
 
 /**
+ * Select previous position before a given position
+ * Returns 0 if there is nothing before the given position
+ * @param parentId {Number} parent ID
+ * @param nextPosition {Number} position
+ * @param cb {function} cb(err, previousPosition)
+ */
+exports._selectPreviousPosition = function(parentId, nextPosition, cb) {
+  var self = this
+  this._sql_selectPreviousPosition(parentId, nextPosition, function(err, result) {
+    if (err) {
+      log.error(err)
+      return cb('Database error')
+    } else {
+      var previousPosition = 0
+      if (Object.keys(result[0]).length != 0) {
+        previousPosition = result[0].position
+      }
+    }
+    return cb(null, previousPosition)
+  })
+}
+
+exports._sql_selectPreviousPosition = function(parentId, nextPosition, cb) {
+  db.query('SELECT position FROM tali_node_hierarchy'
+  + ' WHERE parent_id=? AND position<?'
+  + ' ORDER BY position DESC LIMIT 1'
+  , [parentId, nextPosition]
+  , function(err, result) {
+      return cb(err, result)
+    }
+  )
+}
+/**
  * Select the next position after a given position
  * Returns MAX_POSITION if there is nothing after the given position
  * @param parentId {Number} parent ID
@@ -208,25 +241,68 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
   if (typeof atomic != 'boolean')
     return cb('Atomic must be a Boolean')
 
+  var self = this
+
   var moveChildsUp = function(nodes, newParent, cb) {
+    var forCb = new helpers.asyncCbChecker(nodes.length, function(err, childsArray) {
+      childIds = []
+      for (var i = 0, len = childsArray.length; i < len; i++) {
+        childIds = childIds.concat(childsArray[i])
+      }
+      cb(err, childIds)
+    })
     for (var i = 0, len = nodes.length; i < len; i++) {
       self.getLevel(nodes[i], function(err, childs) {
         self.move._sql_updateParents(nodes[i], childs, newParent, function(err, info) {
-          return cb(err)
+          forCb(err, childs)
         })
       })
     }
   }
 
-  var setPositionOfMovedChilds = function() {
-    this.selectPosition(parentId, nodes[0], function(err, abovePosition) {
-      self._selectNextPosition(parentId, abovePosition, function(err, nextPosition) {
-        var interval = (nextPosition - abovePosition) / (nodes.length + 1)
+  var setPositionOfMovedChilds = function(nodeIds, newPositions) {
+    var firstNode = nodes[0]
+    self._selectPosition(parentId, firstNode, function(err, position) {
+      self._selectPreviousPosition(parentId, position, function(err, previousPosition) {
+        var lastNode = nodes.pop()
+        self._selectPosition(parentId, lastNode, function(err, position) {
+          self._selectNextPosition(parentId, position, function(err, nextPosition) {
+            var interval = (nextPosition - previousPosition) / (nodeIds.length + 1)
+            console.log('nextPosition', nextPosition)
+            console.log('previousPosition', previousPosition)
+            console.log('interval', interval)
+            if (interval < 1) {
+              // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
+            }
+            var forCb = new helpers.asyncCbChecker(nodeIds.length, function(err) {
+              if (err) {
+                log.error(err)
+                return cb(err)
+              } else {
+                var returnedPositions = {}
+                for(key in newPositions) if (newPositions.hasOwnProperty(key)) {
+                  returnedPositions[key] = newPositions[key]
+                }
+                for(key in newChildPositions) if (newChildPositions.hasOwnProperty(key)) {
+                  returnedPositions[key] = newChildPositions[key]
+                }
+                return cb(null, returnedPositions)
+              }
+            })
+            var newChildPositions = {}
+            var currentChildPosition = previousPosition
+            for (var i = 0, len = nodeIds.length; i < len; i++) {
+              currentChildPosition+= interval
+              var newChildPosition = Math.round(currentChildPosition)
+              newChildPositions[nodeIds[i].id] = newChildPosition
+              self.move._sql_setPosition(parentId, nodeIds[i], newChildPosition, forCb)
+            }
+          })
+        })
       })
     })
   }
 
-  var self = this
   this._selectPosition(newParentId, aboveId, function(err, abovePosition) {
     self._selectNextPosition(newParentId, abovePosition, function(err, nextPosition) {
       var interval = (nextPosition - abovePosition) / (nodes.length + 1)
@@ -242,8 +318,6 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
             log.error('Update affected more or less rows than it should', info, nodes)
             return cb('Database error')
           } else {
-            var newPositions = {}
-            var currentPosition = abovePosition
             // Only run the provided callback, when forCb() has been called 'nodes.length' times
             var forCb = new helpers.asyncCbChecker(nodes.length, function(err) {
               if (err) {
@@ -253,12 +327,14 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
                 if (!atomic) {
                   return cb(null, newPositions)
                 } else {
-                  moveChildsUp(nodes, parentId, function(err) {
-                    setPositionOfMovedChilds(nodes)
+                  moveChildsUp(nodes, parentId, function(err, nodes) {
+                    setPositionOfMovedChilds(nodes, newPositions)
                   })
                 }
               }
             })
+            var newPositions = {}
+            var currentPosition = abovePosition
             for (var i = 0, len = nodes.length; i < len; i++) {
               currentPosition+= interval
               newPosition = Math.round(currentPosition)

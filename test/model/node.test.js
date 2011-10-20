@@ -48,7 +48,10 @@ exports['New node creation on top of current nodes'] = function(test) {
   test.expect(2)
 
   node._sql_selectNextPosition = function(parentId, abovePosition, cb) {
-    return cb(null, [{position: 400}])
+    if (parentId == 1 && abovePosition == 0) {
+      return cb(null, [{position: 400}])
+    }
+    return cb('Test error')
   }
   node.newNode._sql_createEmptyNode = function(cb) {
     return cb(null, {insertId: 59})
@@ -68,11 +71,17 @@ exports['New node creation on top of current nodes'] = function(test) {
 exports['New node creation at the end of all nodes'] = function(test) {
   test.expect(2)
 
-  node._sql_selectPosition = function(parentId, aboveId, cb) {
-    return cb(null, [{position: 200}])
+  node._sql_selectPosition = function(parentId, childId, cb) {
+    if (parentId == 1 && childId == 3) {
+      return cb(null, [{position: 200}])
+    }
+    return cb('Test error')
   }
   node._sql_selectNextPosition = function(parentId, abovePosition, cb) {
-    return cb(null, [{}])
+    if (parentId == 1 && abovePosition == 200) {
+      return cb(null, [{}])
+    }
+    return cb('Test error')
   }
   node.newNode._sql_createEmptyNode = function(cb) {
     return cb(null, {insertId: 59})
@@ -81,9 +90,9 @@ exports['New node creation at the end of all nodes'] = function(test) {
     return cb(null, {insertId: 44})
   }
 
-  node.newNode(1, 2, 1, function(err, nodeId, nodePosition) {
+  node.newNode(1, 3, 1, function(err, nodeId, nodePosition) {
     test.equal(nodeId, 59)
-    test.equal(nodePosition, 4194404) // (NODE_MAX_POSITION / 2) + 100
+    test.equal(nodePosition, Math.round((node.MAX_POSITION + 200) / 2))
   })
 
   test.done()
@@ -92,11 +101,17 @@ exports['New node creation at the end of all nodes'] = function(test) {
 exports['New node creation at normal position'] = function(test) {
   test.expect(2)
 
-  node._sql_selectPosition = function(parentId, aboveId, cb) {
-    return cb(null, [{position: 200}])
+  node._sql_selectPosition = function(parentId, childId, cb) {
+    if (parentId == 1 && childId == 2) {
+      return cb(null, [{position: 200}])
+    }
+    return cb('Test error')
   }
   node._sql_selectNextPosition = function(parentId, abovePosition, cb) {
-    return cb(null, [{position: 400}])
+    if (parentId == 1 && abovePosition == 200) {
+      return cb(null, [{position: 400}])
+    }
+    return cb('Test error')
   }
   node.newNode._sql_createEmptyNode = function(cb) {
     return cb(null, {insertId: 59})
@@ -105,7 +120,7 @@ exports['New node creation at normal position'] = function(test) {
     return cb(null, {insertId: 44})
   }
 
-  node.newNode(1, 1, 1, function(err, nodeId, nodePosition) {
+  node.newNode(1, 2, 1, function(err, nodeId, nodePosition) {
     test.equal(nodeId, 59)
     test.equal(nodePosition, 300)
 
@@ -140,38 +155,33 @@ exports['Node moving exists'] = function(test) {
 
 exports['Moving nodes tree-style in the same level'] = function(test) {
   /*
-   * Tested structure
-   * - nodeId (position)
-   * - 1 (200)
-   *   - 2 (100)
-   *     - 7 (300)
-   *       - 10 (300)
-   *     - 8 (450)
-   *   - 3 (200)
-   *     - 9 (300)
-   *   - 4 (300)
-   *   - 5 (400)
-   *   - 6 (500)
-   *
-   * Waited structure
-   * - 1 (200)
-   *   - 4 (300)
-   *   - 2 (333)
-   *     - 7 (100)
-   *       - 10 (300)
-   *     - 8 (450)
-   *   - 3 (367)
-   *     - 9 (300)
-   *   - 5 (400)
-   *   - 6 (500)
+   * Tree-style moving nodes [2, 3] after 4
+   * Tested structure       Waited structure
+   * - nodeId (position)    - nodeId (position)
+   * - 1 (200)              - 1 (200)
+   *   - 2 (100)              - 4 (300)
+   *     - 7 (300)            - 2 (333)
+   *       - 10 (300)           - 7 (300)
+   *     - 8 (450)                - 10 (300)
+   *   - 3 (200)                - 8 (450)
+   *     - 9 (300)            - 3 (367)
+   *   - 4 (300)                - 9 (300)
+   *   - 5 (400)              - 5 (400)
+   *   - 6 (500)              - 6 (500)
    */
   test.expect(2)
 
-  node._sql_selectPosition = function(parentId, aboveId, cb) {
-    return cb(null, [{position: 300}])
+  node._sql_selectPosition = function(parentId, childId, cb) {
+    if (parentId == 1 && childId == 4) {
+      return cb(null, [{position: 300}])
+    }
+    return cb('Test error')
   }
   node._sql_selectNextPosition = function(parentId, abovePosition, cb) {
-    return cb(null, [{position: 400}])
+    if (parentId == 1 && abovePosition == 300) {
+      return cb(null, [{position: 400}])
+    }
+    return cb('Test error')
   }
   node.move._sql_updateParents = function(parentId, nodes, newParentId, cb) {
     return cb(null, {affectedRows: nodes.length})
@@ -190,38 +200,34 @@ exports['Moving nodes tree-style in the same level'] = function(test) {
 
 exports['Moving nodes tree-style to an other level'] = function(test) {
   /*
-   * Tested structure
-   * - nodeId (position)
-   * - 1 (200)
-   *   - 2 (100)
-   *     - 7 (300)
-   *       - 10 (300)
-   *     - 8 (450)
-   *   - 3 (200)
-   *     - 9 (300)
-   *   - 4 (300)
-   *   - 5 (400)
-   *   - 6 (500)
-   *
-   * Waited structure
-   * - 1 (200)
-   *   - 3 (200)
-   *     - 9 (300)
-   *     - 2 (350)
-   *       - 7 (300)
-   *         -10 (300)
-   *       - 8 (450)
-   *   - 4 (300)
-   *   - 5 (400)
-   *   - 6 (500)
+   * Tree-style moving node [2] under 3 after 9
+   * Tested structure       Waited structure
+   * - nodeId (position)    - nodeId (position)
+   * - 1 (200)              - 1 (200)
+   *   - 2 (100)              - 3 (200)
+   *     - 7 (300)              - 9 (300)
+   *       - 11 (300)           - 2 (350)
+   *     - 8 (450)                - 7 (300)
+   *   - 3 (200)                    -11 (300)
+   *     - 9 (300)                - 8 (450)
+   *     - 10 (400)             - 10 (400)
+   *   - 4 (300)              - 4 (300)
+   *   - 5 (400)              - 5 (400)
+   *   - 6 (500)              - 6 (500)
    */
   test.expect(2)
 
-  node._sql_selectPosition = function(parentId, aboveId, cb) {
-    return cb(null, [{position: 300}])
+  node._sql_selectPosition = function(parentId, childId, cb) {
+    if (parentId == 3 && childId == 9) {
+      return cb(null, [{position: 300}])
+    }
+    return cb('Test error')
   }
   node._sql_selectNextPosition = function(parentId, abovePosition, cb) {
-    return cb(null, [{position: node.MAX_POSITION}])
+    if (parentId == 3 && abovePosition == 300) {
+      return cb(null, [{position: 400}])
+    }
+    return cb('Test error')
   }
   node.move._sql_updateParents = function(parentId, nodes, newParentId, cb) {
     return cb(null, {affectedRows: nodes.length})
@@ -232,7 +238,7 @@ exports['Moving nodes tree-style to an other level'] = function(test) {
 
   node.move(1, [2], 3, 9, false, function(err, newPositions) {
     test.equal(err, null)
-    test.deepEqual(newPositions, {'2': 4194454})
+    test.deepEqual(newPositions, {'2': 350})
 
     test.done()
   })
