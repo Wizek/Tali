@@ -16,7 +16,7 @@ define(['jquery', 'template'], function($, tpl) {
   I.init = function(what, cb) {
     if (what == "login") { I._initLogin(cb) }
     else if (what == "doc") { I._initDoc(cb) }
-    else{ console.log('wat-wat-wat?!') }
+    else { console.log('wat-wat-wat?!') }
   }
 
   I._initLogin = function(cb) {
@@ -48,7 +48,7 @@ define(['jquery', 'template'], function($, tpl) {
       $('#loginNow').removeAttr('disabled')
       if (err) {
         alert(err)
-      }else{
+      } else {
         I.init('doc')
       }
     })
@@ -71,14 +71,14 @@ define(['jquery', 'template'], function($, tpl) {
   }
 
   I._cleanBody = function() {
-    $('body > :not([id^=qunit])').remove()
+    $('body > :not(.tree-top)').remove()
   }
 
   I.getChildrenOf = function(id, cb) {
     I.getChildrenOf._emit(id, function(err, results) {
       if (err) {
         return cb(err)
-      }else{
+      } else {
         var counter = results.length
         var htmlResults = []
         require(['template'], function(tpl) {
@@ -110,19 +110,17 @@ define(['jquery', 'template'], function($, tpl) {
   // Replaces old children with new ones completely
   I.placeAsChidrenOf = function(id, html) {
     if (id == 0) {
-      console.log('focused')
       $('#null-node').html(html)
       $('.focused').removeClass('focused')
       $('li.node').eq(0).addClass('focused')
       return true
-    }else{
-      console.log('WIP')
+    } else {
       var $parent = $('[node-id='+id+']')
       if ($parent.length) {
         // We have the parent
         $parent.children('ul.node-container').html(html)
         return true
-      }else{
+      } else {
         // No parent to place the child
         return false
       }

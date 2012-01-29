@@ -15,7 +15,7 @@ require.config({
 require(['connect', 'Interface'], function(conn, I) {
   conn(function(err, username) {
     if (err) {
-      console.log(err)
+      console.error(err)
     }else{
       if (username) {
         I.init('doc')
