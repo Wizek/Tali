@@ -12,7 +12,7 @@
   "dependencies": {
     "should": "~0.2.1",
     "doc.md": "0.0.3",
-    "dox": "0.0.5",
+    "dox": "0.0.5"
   },
   "devDependencies": {}
 }
