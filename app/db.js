@@ -17,7 +17,7 @@ if (typeof debug != 'undefined') {
     if ('function' != typeof opts.success) opts.success = function() {}
     if ('function' != typeof opts.error) opts.error = function(err) {
       console.log('\n')
-      log.fatal(err)
+      log.fatal('db connect failure: ', err)
       log.warn("No callback for error handling has been specified.")
       log.info("We cannot do much without a database."
        + "\n\n ● Therefore exiting now...")

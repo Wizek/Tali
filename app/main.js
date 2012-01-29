@@ -39,7 +39,7 @@ app.listen(PORT, function() {
     , init = color((new Date()-STARTUPTIME)+'ms',36)
                
     , welcome =
-            ' ● Welcome to the '+APPNAME+'! '+ver
+        color('',36)+' ● Welcome to '+APPNAME+'! '+ver
         + '\n ● Main server is up and longing for connections on port '+port
         + '\n ● Enviroment has '+env
         + '\n ● Initialization finished on '+now+', took '+init

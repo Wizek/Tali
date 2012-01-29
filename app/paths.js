@@ -1,3 +1,5 @@
+// deprecated file
+//return
 var path = require('path')
   , settings = require('./settings.js')
 
