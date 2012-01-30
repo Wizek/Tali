@@ -4,12 +4,12 @@ void function() {
     return Math.round((a+b)/2)
   }
   var tplStr = {
-    node: ''
+    node: _.template(''
       +'<span class="handle plus">+</span>'
       +'<span class="handle minus">-</span>'
       +'<span class="handle dot">&nbsp;</span>'
-      +'<span class="headline"><%= headline %></span>'
-      +'<span class="body"><%= body %></span>'
+      +'<textarea class="headline"><%= headline %></textarea>'
+      +'<textarea class="body"><%= body %></textarea>')
   }
   
   window.MAX_POS = Math.pow(2,32)-1
@@ -30,6 +30,7 @@ void function() {
       return o
     }
     , initialize: function() {
+      this.view = new NodeView({model:this})
       this.bind('change:body', updateUpdatedAt)
       this.bind('change:headline', updateUpdatedAt)
       this.bind('change:position', updateUpdatedAt)
@@ -37,7 +38,6 @@ void function() {
         self.set({'updatedAt':new Date()})
       }
     }
-    , 'change: headline': function() {}
     , prevPos: function() {
       var pos = this.get('position')
       var coll = this.collection
@@ -151,11 +151,34 @@ void function() {
     tagName: 'li'
     , initialize: function() {
       _.bindAll(this, 'render')
+      this.model.bind('change:headline', this.changeViewHead, this)
+      this.model.bind('change:body', this.changeViewBody, this)
       this.render()
     }
+    , events: {
+      'change .headline': 'changeModelHead',
+      'change .body': 'changeModelBody',
+    }
+    , changeModelHead: function() {
+      // TODO not just change event
+      var text = $(this.el).children('.headline').text()
+      console.log(text)
+      this.model.set({headline: text})
+    }
+    , changeModelBody: function() {
+      var text = $(this.el).children('.body').text()
+      console.log($(this.el).val())
+      this.model.set({body: text})
+    }
+    , changeViewHead: function() {
+      $(this.el).children('.headline').text(this.model.get('headline'))
+    }
+    , changeViewBody: function() {
+      $(this.el).children('.body').text(this.model.get('body'))
+    }
     , render: function() {
-      var template = _.template(tplStr.node)
-      $(this.el).html(template({body: 'Foo', headline: 'Bar'}))
+      // console.log(this.model.get('headline'))
+      $(this.el).html(tplStr.node(this.model.toJSON()))
     }
   })
 
