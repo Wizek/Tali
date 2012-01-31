@@ -238,6 +238,18 @@ void function() {
     }
   })
 
-  window.topLevel = new Children(null, {parent:null})
+  window.Focus = Backbone.Model.extend({
+    defaults: {
+      at: null
+    },
+    initialize: function() {
+      this.bind('change:at', function(focus, at) {
+        at.set({focus:focus})
+        
+      })
+    },
+  })
+  window.focus = new Focus
 
+  window.topLevel = new Children(null, {parent:null})
 }()

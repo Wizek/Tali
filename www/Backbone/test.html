@@ -552,9 +552,18 @@ tree.branch('Views', function(tree) {
     // setTimeout(function() {console.log($n1.is('.visible')) },1)
     tree.done(3)
   })
-  tree.branch('//Focus', function(tree) {
-    
-    tree.done(-1)
+  tree.branch('Focus', function(tree) {
+    tree(window.Focus).type('function')
+    tree(window.focus instanceof Focus).ok()
+    var ch = new Children
+    var n1 = new Node
+    var n2 = new Node
+    ch.append(n1)
+    ch.append(n2)
+    tree(focus.get('at')).is(null)
+    focus.set({at:n1})
+    focus.set({at:n2})
+    tree.done(3)
   })
   tree.done(0)
 })
