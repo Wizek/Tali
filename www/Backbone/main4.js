@@ -22,15 +22,15 @@ void function() {
         , createdAt: new Date()
         , updatedAt: new Date()
         , position: 2147483648 //Math.round((0+(Math.pow(2,32)-1))/2)
-        , children: new Children()
+        , children: null
         , expanded: true
         , locked: false
       }
-      o.children.parent = this
       return o
     }
     , initialize: function() {
       this.view = new NodeView({model:this})
+      this.set({children:new Children(null, {parent:this})})
       this.bind('change:body', updateUpdatedAt)
       this.bind('change:headline', updateUpdatedAt)
       this.bind('change:position', updateUpdatedAt)
@@ -76,15 +76,15 @@ void function() {
       var pos = this.get('position')
       var coll = this.collection
       newPos = iAvg(this.prevPos(), pos)
-      node.set({position:newPos})
       coll.add(node)
+      node.set({position:newPos})
     }
     , after: function(node) {
       var pos = this.get('position')
       var coll = this.collection
       newPos = iAvg(pos, this.nextPos())
-      node.set({position:newPos})
       coll.add(node)
+      node.set({position:newPos})
     }
     , appendChild: function(node) {
       this.get('children').append(node)
@@ -133,6 +133,10 @@ void function() {
 
   window.Children = Backbone.Collection.extend({
     model: Node
+    , initialize: function(models, opts) {
+      this.parent = opts ? opts.parent || null : null
+      this.view = new ChildrenView({collection:this})
+    }
     , getByPosition: function(position) {
       return this.find(function(node) {
         return node.get('position') == position
@@ -153,21 +157,44 @@ void function() {
       _.bindAll(this, 'render')
       this.model.bind('change:headline', this.changeViewHead, this)
       this.model.bind('change:body', this.changeViewBody, this)
+      this.model.bind('change:position', this.changeViewPosition, this)
+      this.model.bind('change:expanded', this.changeViewExpanded, this)
       this.render()
     }
     , events: {
       'change .headline': 'changeModelHead',
+      'keyup .headline': 'changeModelHead',
+      'blur .headline': 'changeModelHead',
       'change .body': 'changeModelBody',
+      'keyup .body': 'changeModelBody',
+      'blur .body': 'changeModelBody',
+    }
+    , changeViewExpanded: function() {
+      var e = this.model.get('expanded')
+      var t = $(this.model.get('children').view.el)
+      t.removeClass(e?'hidden':'visible')
+      t.addClass(e?'visible':'hidden')
+
+    }
+    , changeViewPosition: function() {
+      var coll = this.model.collection
+      if (!coll) {
+        return console.warn('Changed position of an orphan node', this)
+      }
+      var prev = this.model.prevNode()
+      if (prev) { 
+        $(prev.view.el).after(this.el)
+      } else {
+        $(this.model.collection.view.el).prepend(this.el)
+      }
     }
     , changeModelHead: function() {
       // TODO not just change event
-      var text = $(this.el).children('.headline').text()
-      console.log(text)
+      var text = $(this.el).children('.headline').val()
       this.model.set({headline: text})
     }
     , changeModelBody: function() {
-      var text = $(this.el).children('.body').text()
-      console.log($(this.el).val())
+      var text = $(this.el).children('.body').val()
       this.model.set({body: text})
     }
     , changeViewHead: function() {
@@ -177,13 +204,26 @@ void function() {
       $(this.el).children('.body').text(this.model.get('body'))
     }
     , render: function() {
-      // console.log(this.model.get('headline'))
       $(this.el).html(tplStr.node(this.model.toJSON()))
     }
   })
 
   window.ChildrenView = Backbone.View.extend({
-    tagName: 'ul'
+    tagName: 'ul',
+    initialize: function() {
+      var self = this
+      this.collection.bind('add', function(node) {
+        $(self.collection.view.el).append(node.view.el)
+      })
+      this.render()
+    },
+    render: function() {
+      var p = this.collection.parent
+      if (p) {
+        $(this.el).addClass(p.get('expanded') ? 'visible' : 'hidden')
+        $(p.view.el).append(this.el)
+      }
+    }
     // , 
   })
   window.Interface = Backbone.View.extend({
@@ -198,6 +238,6 @@ void function() {
     }
   })
 
-  window.topLevel = new Children()
+  window.topLevel = new Children(null, {parent:null})
 
 }()

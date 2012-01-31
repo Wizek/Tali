@@ -3,6 +3,7 @@
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="underscore.js"></script>
 <script type="text/javascript" src="backbone.js"></script>
+<!-- <script type="text/javascript" src="backbone.modelbinding.js"></script> -->
 <script type="text/javascript" src="tree.js"></script>
 <script type="text/javascript" src="main4.js"></script>
 <script type="text/javascript">
@@ -33,7 +34,11 @@ tree.branch('Children Collection', function(tree) {
     // node.get('children').add(new Node({headline:'asdasd'}))
     tree.done(2)
   })
-  tree.branch('// topLevel')
+  tree.branch('topLevel', function(tree) {
+    tree(topLevel instanceof Children).ok()
+    tree(topLevel.parent).is(null)
+    tree.done(2)
+  })
   tree.branch('.getByPosition()', function(tree) {
     var ch = new Children()
     var n = new Node({position:134555})
@@ -294,15 +299,21 @@ tree.branch('Node Model', function(tree) {
     n2.moveOut()
     tree(ch.size()).is(3)
     tree(n1.get('children').size()).is(0)
-    tree(ch.models[2]).is(n2)
+    tree(n1.nextNode()).is(n2)
+    tree(n3.prevNode()).is(n2)
+    tree(n2.nextNode()).is(n3)
+    tree(n2.prevNode()).is(n1)
     tree(n2.get('position')).is(iAvg(n1p,n3p))
 
     n2.moveOut()
     tree(ch.size()).is(3)
     tree(n1.get('children').size()).is(0)
-    tree(ch.models[2]).is(n2)
+    tree(n1.nextNode()).is(n2)
+    tree(n3.prevNode()).is(n2)
+    tree(n2.nextNode()).is(n3)
+    tree(n2.prevNode()).is(n1)
     tree(n2.get('position')).is(iAvg(n1p,n3p))
-    tree.done(12)
+    tree.done(18)
   })
   tree.branch('.expand(), .collapse()', function(tree) {
     tree(Node.prototype.expand).type('function')
@@ -360,11 +371,11 @@ tree.branch('Views', function(tree) {
     tree(Interface).type('function')
     var i = new Interface
     tree($(i.el).is('div.tali-top')).ok()
-    tree($(i.el).find('ul').length).is(1)
+    tree($(i.el).find('> ul').length).is(1)
     tree.done(3)
   })
   tree.branch('//topLevel', function(tree) {
-    tree($(i.el).find('ul').length).is(1)
+    tree($(i.el).find('> ul').length).is(1)
     topLevel.append(new Node({headline:'asd'}))
     tree.done(0)
   })
@@ -376,11 +387,11 @@ tree.branch('Views', function(tree) {
     tree(n.view.model).is(n)
     tree(n.view).is(n.view.model.view)
     tree($(n.view.el).is('li')).ok()
-    tree($(n.view.el).find('span.handle.minus').length).is(1)
-    tree($(n.view.el).find('span.handle.plus').length).is(1)
-    tree($(n.view.el).find('span.handle.dot').length).is(1)
-    tree($(n.view.el).find('textarea.headline').length).is(1)
-    tree($(n.view.el).find('textarea.body').length).is(1)
+    tree($(n.view.el).find('> span.handle.minus').length).is(1)
+    tree($(n.view.el).find('> span.handle.plus').length).is(1)
+    tree($(n.view.el).find('> span.handle.dot').length).is(1)
+    tree($(n.view.el).find('> textarea.headline').length).is(1)
+    tree($(n.view.el).find('> textarea.body').length).is(1)
     tree.done(11)
   })
   tree.branch('Node changes from model to view', function(tree) {
@@ -390,16 +401,16 @@ tree.branch('Views', function(tree) {
       headline:'fopo',
       body:'bar'
     })
-    var head = $(n.view.el).find('.headline')
-    var body = $(n.view.el).find('.body')
-    tree(head.text()).is('fopo')
-    tree(body.text()).is('bar')
+    var head = $(n.view.el).find('> .headline')
+    var body = $(n.view.el).find('> .body')
+    tree(head.val()).is('fopo')
+    tree(body.val()).is('bar')
     n.set({headline:'asd'})
-    tree(head.text()).is('asd')
-    tree(body.text()).is('bar')
+    tree(head.val()).is('asd')
+    tree(body.val()).is('bar')
     n.set({body:'str8625'})
-    tree(head.text()).is('asd')
-    tree(body.text()).is('str8625')
+    tree(head.val()).is('asd')
+    tree(body.val()).is('str8625')
     tree.done(8)
   })
   tree.branch('Node changes from view to model', function(tree) {
@@ -409,24 +420,141 @@ tree.branch('Views', function(tree) {
       headline:'str6981',
       body:'str8476'
     })
-    var head = $(n.view.el).find('.headline')
-    var body = $(n.view.el).find('.body')
+    var head = $(n.view.el).find('> .headline')
+    var body = $(n.view.el).find('> .body')
     // TODO not just change event
-    head.text('str1331').change()
+    head.val('str1331').change()
     tree(n.get('headline')).is('str1331')
     tree(n.get('body')).is('str8476')
-    body.text('str8699').change()
+    body.val('str8699').change()
     tree(n.get('headline')).is('str1331')
     tree(n.get('body')).is('str8699')
     tree.done(6)
   })
-  tree.branch('//ChildrenView', function(tree) {
-    tree(window.ChildrenView).type('function')
-    var chv = new ChildrenView()
-    tree($(chv.el).is('ul')).ok()
-    var n = new NodeView()
-    // tree($(chv.el).find('ul').length).isnt(1)
-    tree.done(2)
+  tree.branch('Collection/children view', function(tree) {
+    var n = new Node
+    tree(n.get('children') instanceof Children).ok()
+    tree(n.get('children').view instanceof ChildrenView).ok()
+    tree(n.get('children').view.collection).is(n.get('children'))
+    tree(n.get('children').view.collection.view).is(n.get('children').view)
+    var $n = $(n.view.el)
+    tree($n.find('> ul').length).is(1)
+    n.appendChild(new Node)
+    tree($n.find('> ul > li').length).is(1)
+    tree.done(6)
+  })
+  tree.branch('Ordering', function(tree) {
+    tree.branch('Direct position change ordering', function(tree) {
+      var np = new Node
+      var n1 = new Node
+      var n2 = new Node
+      var n3 = new Node
+      np.appendChild(n1)
+      np.appendChild(n2)
+      np.appendChild(n3)
+      n1.set({position:1000})
+      n2.set({position:2000})
+      n3.set({position:3000})
+      var $p = $(np.view.el)
+      tree($p.find('> ul > li').get(0)).is(n1.view.el)
+      tree($p.find('> ul > li').get(1)).is(n2.view.el)
+      tree($p.find('> ul > li').get(2)).is(n3.view.el)
+      // n1.set({position:1000})
+      n3.set({position:400})
+      // n2.set({position:2000})
+      tree($p.find('> ul > li').get(0)).is(n3.view.el)
+      tree($p.find('> ul > li').get(1)).is(n1.view.el)
+      tree($p.find('> ul > li').get(2)).is(n2.view.el)
+      tree.done(6)
+    })
+    tree.branch('Higher level ordering - move up and down', function(tree) {
+      var np = new Node
+      var n1 = new Node
+      var n2 = new Node
+      var n3 = new Node
+      np.appendChild(n1)
+      np.appendChild(n2)
+      np.appendChild(n3)
+      var $p = $(np.view.el).find('> ul')
+
+      tree($p.children().length).is(3)
+      tree($p.children().get(0)).is(n1.view.el)
+      tree($p.children().get(1)).is(n2.view.el)
+      tree($p.children().get(2)).is(n3.view.el)
+      n3.moveUp()
+      tree($p.children().get(0)).is(n1.view.el)
+      tree($p.children().get(1)).is(n3.view.el)
+      tree($p.children().get(2)).is(n2.view.el)
+      n3.moveUp()
+      tree($p.children().get(0)).is(n3.view.el)
+      tree($p.children().get(1)).is(n1.view.el)
+      tree($p.children().get(2)).is(n2.view.el)
+      n3.moveUp()
+      tree($p.children().get(0)).is(n3.view.el)
+      tree($p.children().get(1)).is(n1.view.el)
+      tree($p.children().get(2)).is(n2.view.el)
+      n2.moveDown()
+      tree($p.children().get(0)).is(n3.view.el)
+      tree($p.children().get(1)).is(n1.view.el)
+      tree($p.children().get(2)).is(n2.view.el)
+      // console.log(n3.get('position'))
+      // console.log(n1.get('position'))
+      // console.log(n2.get('position'))
+      // console.log($p.find('> ul > li:eq(0) > .body').text())
+      // console.log($p.find('> ul > li:eq(1) > .body').text())
+      // console.log($p.find('> ul > li:eq(2) > .body').text())
+      n1.moveDown()
+      tree($p.children().get(0)).is(n3.view.el)
+      tree($p.children().get(1)).is(n2.view.el)
+      tree($p.children().get(2)).is(n1.view.el)
+      tree.done(7+6*2)
+    })
+    tree.branch('Higher level ordering - move in and out', function(tree) {
+      var n = new Node
+      var n_1 = new Node
+      var n_1_1 = new Node
+      var n_2 = new Node
+      n.appendChild(n_1)
+      n_1.appendChild(n_1_1)
+      n.appendChild(n_2)
+      tree($(n_1.view.el).find('> ul > li').length).is(1)
+      tree($(n.view.el).find('> ul > li').length).is(2)
+      n_1_1.moveOut()
+      // console.log(n_1.get('position'))
+      // console.log(n_1_1.get('position'))
+      // console.log(n_2.get('position'))
+      tree($(n_1.view.el).find('> ul > li').length).is(0)
+      tree($(n.view.el).find('> ul > li').length).is(3)
+      tree($(n.view.el).find('> ul > li').get(0)).is(n_1.view.el)
+      tree($(n.view.el).find('> ul > li').get(1)).is(n_1_1.view.el)
+      tree($(n.view.el).find('> ul > li').get(2)).is(n_2.view.el)
+      n_1_1.moveIn()
+      tree($(n_1.view.el).find('> ul > li').length).is(1)
+      tree($(n.view.el).find('> ul > li').length).is(2)
+      tree($(n.view.el).find('> ul > li').get(0)).is(n_1.view.el)
+      tree($(n.view.el).find('> ul > li').get(1)).is(n_2.view.el)
+      tree.done(11)
+    })
+    tree.done(0)
+  })
+  tree.branch('Hiding', function(tree) {
+    var n1 = new Node
+    var n2 = new Node({body:'Anyámkínja'})
+    n1.appendChild(n2)
+    var $n1 = $(n1.get('children').view.el)
+    tree($n1.is('.visible')).ok()
+    n1.collapse()
+    tree($n1.is('.hidden')).ok()
+    n1.expand()
+    tree($n1.is('.visible')).ok()
+    // console.log($n1.is('.visible'))
+    // console.log($n1.is('.visible'))
+    // setTimeout(function() {console.log($n1.is('.visible')) },1)
+    tree.done(3)
+  })
+  tree.branch('//Focus', function(tree) {
+    
+    tree.done(-1)
   })
   tree.done(0)
 })
