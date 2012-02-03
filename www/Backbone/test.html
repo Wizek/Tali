@@ -1,9 +1,9 @@
 <body></body>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="shortcut.js"></script>
 <script type="text/javascript" src="underscore.js"></script>
 <script type="text/javascript" src="backbone.js"></script>
-<!-- <script type="text/javascript" src="backbone.modelbinding.js"></script> -->
 <script type="text/javascript" src="tree.js"></script>
 <script type="text/javascript" src="main4.js"></script>
 <script type="text/javascript">
@@ -66,6 +66,18 @@ tree.branch('Children Collection', function(tree) {
     tree(n2.get('position')).is(Math.round((2147483648+MAX_POS)/2))
     tree(n3.get('position')).is(Math.round((3221225472+MAX_POS)/2))
     tree.done(8)
+  })
+  tree.branch('first, last', function(tree) {
+    var ch = new Children()
+    var n1 = new Node()
+    var n2 = new Node()
+    var n3 = new Node()
+    ch.append(n1)
+    ch.append(n2)
+    ch.append(n3)
+    tree(ch.first()).is(n1)
+    tree(ch.last()).is(n3)
+    tree.done(2)
   })
   tree.done(0)
 })
@@ -553,17 +565,128 @@ tree.branch('Views', function(tree) {
     tree.done(3)
   })
   tree.branch('Focus', function(tree) {
-    tree(window.Focus).type('function')
-    tree(window.focus instanceof Focus).ok()
-    var ch = new Children
-    var n1 = new Node
-    var n2 = new Node
-    ch.append(n1)
-    ch.append(n2)
-    tree(focus.get('at')).is(null)
-    focus.set({at:n1})
-    focus.set({at:n2})
-    tree.done(3)
+    tree.branch('basics', function(tree) {
+      tree(window.Focus).type('function')
+      tree(window.Focus.prototype.at).type('function')
+      tree(window.focus instanceof Focus).ok()
+      tree(window.focus.get('ours')).is(true)
+      var f = new Focus
+      var ch = new Children
+      var n1 = new Node
+      var n2 = new Node
+      tree(f.get('ours')).is(false)
+      ch.append(n1)
+      ch.append(n2)
+      tree(f.get('at')).is(null)
+      tree(n1.get('focus')).is(null)
+      tree(n2.get('focus')).is(null)
+      f.set({at:n1})
+      tree(f.get('at')).isnot(null)
+      tree(n1.get('focus')).is(f)
+      tree(n2.get('focus')).is(null)
+      f.set({at:n2})
+      tree(n1.get('focus')).is(null)
+      tree(n2.get('focus')).is(f)
+
+      f.at(new Node)      
+      tree(n1.get('focus')).is(null)
+      tree(n2.get('focus')).is(null)
+      tree(f.get('at')).is(f.at())
+      var x = new Node
+      tree(f.at(x)).is(f.at())
+      f.at(null || false || undefined || '')
+      tree(f.at()).is(x)
+      tree.done(18)
+    })
+    tree.branch('go up, down', function(tree) {
+      tree(window.Focus.prototype.goUp).type('function')
+      tree(window.Focus.prototype.goDown).type('function')
+      var f = new Focus
+      var ch = new Children
+      var n1 = new Node
+      var n2 = new Node
+      ch.append(n1)
+      ch.append(n2)
+      tree(f.at()).is(null)
+      f.at(n2)
+      tree(f.at()).is(n2)
+      f.goUp()
+      tree(f.at()).is(n1)
+      f.goUp()
+      tree(f.at()).is(n1)
+      f.goDown()
+      tree(f.at()).is(n2)
+      f.goDown()
+      tree(f.at()).is(n2)
+      tree.done(8)
+    })
+    tree.branch('go in, out', function(tree) {
+      tree(window.Focus.prototype.goIn).type('function')
+      tree(window.Focus.prototype.goOut).type('function')
+      var f = new Focus
+      var ch = new Children
+      var n1 = new Node
+      var n2 = new Node
+      var n3 = new Node
+      ch.append(n1)
+      ch.append(n2)
+      n2.appendChild(n3)
+      f.at(n2)
+      f.goIn()
+      tree(f.at()).is(n3)
+      f.goIn()
+      tree(f.at()).is(n3)
+      f.goOut()
+      tree(f.at()).is(n2)
+      f.goOut()
+      tree(f.at()).is(n2)
+      tree.done(6)
+    })
+    tree.branch('focus changes', function(tree) {
+      var n = new Node
+      var f1 = new Focus({ours:true})
+      var f2 = new Focus
+      tree($(n.view.el).hasClass('focused')).not.ok()
+      tree($(n.view.el).hasClass('theirs')).not.ok()
+      tree($(n.view.el).hasClass('ours')).not.ok()
+      f1.at(n)
+      tree($(n.view.el).hasClass('focused')).ok()
+      tree($(n.view.el).hasClass('theirs')).not.ok()
+      tree($(n.view.el).hasClass('ours')).ok()
+      f1.at(new Node)
+      tree($(n.view.el).hasClass('focused')).not.ok()
+      tree($(n.view.el).hasClass('theirs')).not.ok()
+      tree($(n.view.el).hasClass('ours')).not.ok()
+
+      f2.at(n)
+      tree($(n.view.el).hasClass('focused')).ok()
+      tree($(n.view.el).hasClass('theirs')).ok()
+      tree($(n.view.el).hasClass('ours')).not.ok()
+      f2.at(new Node)
+      tree($(n.view.el).hasClass('focused')).not.ok()
+      tree($(n.view.el).hasClass('theirs')).not.ok()
+      tree($(n.view.el).hasClass('ours')).not.ok()
+      f1.at(n)
+      tree(function() { f2.at(n) }).throws()
+      tree($(n.view.el).hasClass('focused')).ok()
+      tree($(n.view.el).hasClass('theirs')).not.ok()
+      tree($(n.view.el).hasClass('ours')).ok()
+      tree.done(19)
+    })
+    tree.branch('focus view', function(tree) {
+      var f = new Focus
+      tree(f.view).type('object')
+      tree(f.view instanceof Backbone.View).ok()
+      tree(f.view.model instanceof Backbone.Model).ok()
+      tree(f.view.model).is(f)
+      tree(f.view.model.view).is(f.view)
+      tree.done(5)
+    })
+    tree.branch('shortcut.js', function(tree) {
+      tree(window.shortcut).type('object')
+      tree.done(1)
+    })
+    tree.done(0)
   })
   tree.done(0)
 })

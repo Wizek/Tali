@@ -32,11 +32,11 @@ void function() {
       }
       function write (obj) {
         if (heritable) {
-          for (key in obj) if (obj.hasOwnProperty(key)) {
+          for (var key in obj) if (obj.hasOwnProperty(key)) {
             tree.config.heritable[key] = obj[key]
           }
         } else {    
-          for (key in obj) if (obj.hasOwnProperty(key)) {
+          for (var key in obj) if (obj.hasOwnProperty(key)) {
             tree.config.oneLevel[key] = obj[key]
           }
         }
@@ -69,10 +69,10 @@ void function() {
               : her[str])
           } else { // general query
             var out = {}
-            for (key in her) if (her.hasOwnProperty(key)) {
+            for (var key in her) if (her.hasOwnProperty(key)) {
               out[key] = her[key]
             }
-            for (key in one) if (one.hasOwnProperty(key)) {
+            for (var key in one) if (one.hasOwnProperty(key)) {
               out[key] = one[key]
             }
             return out
@@ -567,7 +567,7 @@ void function() {
           }
         } else {
           if (Object.keys(x1).length === Object.keys(x2).length) {
-            for (key in x1) if (x1.hasOwnProperty(key)) {
+            for (var key in x1) if (x1.hasOwnProperty(key)) {
               if (!tree._helpers.deepEql(x1[key], x2[key])) {
                 // one turns out to be not equal
                 return false
@@ -582,7 +582,7 @@ void function() {
       } else if (t1 == 'function') {
         if (x1.toString() === x2.toString()) {
           if (Object.keys(x1).length === Object.keys(x2).length) {
-            for (key in x1) if (x1.hasOwnProperty(key)) {
+            for (var key in x1) if (x1.hasOwnProperty(key)) {
               if (!tree._helpers.deepEql(x1[key], x2[key])) {
                 // one turns out to be not equal
                 return false
@@ -865,7 +865,7 @@ void function() {
     tree._done = false
     tree._timedOut = false
     var asserts = tree._asserts
-    for (key in asserts) if (asserts.hasOwnProperty(key)) {
+    for (var key in asserts) if (asserts.hasOwnProperty(key)) {
       // if (!tree._assertTpl[key]) {
       //   throw new Error('Missing template string for assert: '+key)
       // }

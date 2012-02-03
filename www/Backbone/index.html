@@ -1,16 +1,17 @@
-<!doctype html>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<style type="text/css">
-[contenteditable] {
-  border:1px black solid;
-}
-</style>
+<body></body>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="shortcut.js"></script>
 <script type="text/javascript" src="underscore.js"></script>
 <script type="text/javascript" src="backbone.js"></script>
-<span>index</span>
-<script type="text/template" id="line-template">
-  <p>asdasd</p>
-  <%= asd>
-</script>
 <script type="text/javascript" src="main4.js"></script>
+<script type="text/javascript">
+var interface = new Interface
+var topLevel = new Children
+var n = new Node
+// var f = new Focus
+$('body').append(interface.el)
+$(interface.el).append(topLevel.view.el)
+topLevel.append(n)
+focus.at(n)
+</script>

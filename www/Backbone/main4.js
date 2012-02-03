@@ -14,6 +14,7 @@ void function() {
   
   window.MAX_POS = Math.pow(2,32)-1
   window.MIN_POS = 0
+  window.MID_POS = iAvg(MIN_POS, MAX_POS)
   window.Node = Backbone.Model.extend({
     defaults: function() {
       var o = {
@@ -21,10 +22,11 @@ void function() {
         , body: ''
         , createdAt: new Date()
         , updatedAt: new Date()
-        , position: 2147483648 //Math.round((0+(Math.pow(2,32)-1))/2)
+        , position: MID_POS
         , children: null
         , expanded: true
         , locked: false
+        , focus: null
       }
       return o
     }
@@ -149,6 +151,16 @@ void function() {
       }
       this.add(node)
     }
+    , first: function() {
+      return this.min(function(v) {
+        return v.get('position')
+      })
+    }
+    , last: function() {
+      return this.max(function(v) {
+        return v.get('position')
+      })
+    }
   })
 
   window.NodeView = Backbone.View.extend({
@@ -159,6 +171,7 @@ void function() {
       this.model.bind('change:body', this.changeViewBody, this)
       this.model.bind('change:position', this.changeViewPosition, this)
       this.model.bind('change:expanded', this.changeViewExpanded, this)
+      this.model.bind('change:focus', this.changeViewFocus, this)
       this.render()
     }
     , events: {
@@ -203,6 +216,14 @@ void function() {
     , changeViewBody: function() {
       $(this.el).children('.body').text(this.model.get('body'))
     }
+    , changeViewFocus: function(node, focus) {
+      var f = node.get('focus')
+      if (!f) {
+        $(this.el).removeClass('focused ours theirs')
+      } else {
+        $(this.el).addClass('focused '+(f.get('ours')?'ours':'theirs'))
+      }
+    }
     , render: function() {
       $(this.el).html(tplStr.node(this.model.toJSON()))
     }
@@ -240,16 +261,57 @@ void function() {
 
   window.Focus = Backbone.Model.extend({
     defaults: {
-      at: null
+      at: null,
+      ours: false,
     },
     initialize: function() {
-      this.bind('change:at', function(focus, at) {
-        at.set({focus:focus})
-        
-      })
+      this.view = new FocusView({model:this})
+      this.bind('change:at', this.atChanged)
+    },
+    atChanged: function(focus, at) {
+      at.set({focus:focus})
+      var prev = focus.previousAttributes()
+      if (prev.at) {
+        prev.at.set({focus:null})
+      }
+    },
+    at: function(v) {
+      if (arguments.length) {
+        if (!v) {return}
+        if (v.get('focus')) {
+          throw new Error('Trying to override focus', this, v)
+        }
+        this.set({at:v})
+        return v
+      } else {
+        return this.get('at')
+      }
+    },
+    goUp: function() {
+      this.at(this.at().prevNode())
+    },
+    goDown: function() {
+      this.at(this.at().nextNode())
+    },
+    goIn: function() {
+      this.at(this.at().get('children').first())
+    },
+    goOut: function() {
+      this.at(this.at().collection.parent)
+    },
+    AddChildAfterAndFocusIt: function() {
+      this.at().after(new Node)
     },
   })
-  window.focus = new Focus
+
+  window.FocusView = Backbone.View.extend({
+    initialize: function() {
+      var m = this.model
+      shortcut.add('ctrl+enter', m.AddChildAfterAndFocusIt)
+    },
+  })
+
+  window.focus = new Focus({ours:true})
 
   window.topLevel = new Children(null, {parent:null})
 }()
