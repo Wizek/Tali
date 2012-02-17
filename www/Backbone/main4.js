@@ -172,6 +172,7 @@ void function() {
       this.model.bind('change:position', this.changeViewPosition, this)
       this.model.bind('change:expanded', this.changeViewExpanded, this)
       this.model.bind('change:focus', this.changeViewFocus, this)
+      this.model.bind('destroy', this.destroy, this)
       this.render()
     }
     , events: {
@@ -211,10 +212,11 @@ void function() {
       this.model.set({body: text})
     }
     , changeViewHead: function() {
-      $(this.el).children('.headline').text(this.model.get('headline'))
+      console.log('changeViewHead', this.model.get('headline'))
+      $(this.el).children('.headline').val(this.model.get('headline'))
     }
     , changeViewBody: function() {
-      $(this.el).children('.body').text(this.model.get('body'))
+      $(this.el).children('.body').val(this.model.get('body'))
     }
     , changeViewFocus: function(node, focus) {
       var f = node.get('focus')
@@ -226,6 +228,9 @@ void function() {
     }
     , render: function() {
       $(this.el).html(tplStr.node(this.model.toJSON()))
+    }
+    , destroy: function() {
+      $(this.el).remove()
     }
   })
 
@@ -266,7 +271,7 @@ void function() {
     },
     initialize: function() {
       this.view = new FocusView({model:this})
-      // _.bindAll(this, 'at', 'goUp')
+      _.bindAll(this, 'at')
       // console.log(this)
       // _.bind(this.goUp, this)
       this.bind('change:at', this.atChanged)
@@ -307,14 +312,18 @@ void function() {
     // goFlatUp: function() {}, 
     // goFlatDown: function() {}, 
     addNodeAfterAndFocusIt: function() {
-      // debugger
       var t = this.at
-      console.log(this)
-      console.log(t)
       t().after(new Node)
       t(t().nextNode())
     },
-    deleteNodeAndFocusPrevious: function() {}, 
+    deleteNodeAndFocusPrevious: function() {
+      var t = this.at()
+      var prevHead = t.prevNode().get('headline')
+      var ourHead = t.get('headline')
+      t.prevNode().set({headline: prevHead+ourHead})
+      this.at(t.prevNode())
+      t.delete()
+    }, 
     deleteNodeAndFocusNext: function() {}, 
     expandCurrentLevel: function() {
       this.at().expand()
@@ -324,12 +333,24 @@ void function() {
     }, 
     expandAndGoIn: function() {}, 
     // goOutAndCollapse: function() {}, 
-    moveUp: function() {}, 
-    moveDown: function() {}, 
+    moveUp: function() {
+      this.at().moveUp()
+      this.view.focusHeadElement()
+    }, 
+    moveDown: function() {
+      this.at().moveDown()
+      this.view.focusHeadElement()
+    }, 
     // moveFlatUp: function() {}, 
     // moveFlatDown: function() {}, 
-    moveIn: function() {}, 
-    moveOut: function() {}, 
+    moveIn: function() {
+      this.at().moveIn()
+      this.view.focusHeadElement()
+    }, 
+    moveOut: function() {
+      this.at().moveOut()
+      this.view.focusHeadElement()
+    }, 
     copyAfterAndFocusIt: function() {}, 
   })
   // Focus.prototype.goUp = Focus.prototype.goUp.bind(Focus.prototype)
@@ -338,22 +359,40 @@ void function() {
   window.FocusView = Backbone.View.extend({
     initialize: function() {
       var m = this.model
-      console.log(this.model)
+      this.model.bind('change:at', this.focusHeadElement, this)
+      this.model.bind('destroy', this.destroy, this)
+      // _.bindAll(this, 'focusHeadElement')
       // window.addEventListener('click', m.goUp.bind(m), true)
       shortcut.add('up', m.goUp.bind(m))
       shortcut.add('down', m.goDown.bind(m))
-      shortcut.add('right', m.goIn.bind(m))
-      shortcut.add('left', m.goOut.bind(m))
+      shortcut.add('alt+up', m.goUp.bind(m))
+      shortcut.add('alt+down', m.goDown.bind(m))
+      shortcut.add('alt+right', m.goIn.bind(m))
+      shortcut.add('alt+left', m.goOut.bind(m))
       shortcut.add('enter', m.addNodeAfterAndFocusIt.bind(m))
       shortcut.add('backspace', m.deleteNodeAndFocusPrevious.bind(m))
       shortcut.add('delete', m.deleteNodeAndFocusNext.bind(m))
       shortcut.add('l', m.expandCurrentLevel.bind(m))
       shortcut.add('h', m.collapseCurrentLevel.bind(m))
-      shortcut.add('shift+up', m.moveUp.bind(m))
-      shortcut.add('shift+down', m.moveDown.bind(m))
-      shortcut.add('shift+right', m.moveIn.bind(m))
-      shortcut.add('shift+left', m.moveOut.bind(m))
+      shortcut.add('alt+shift+up', m.moveUp.bind(m))
+      shortcut.add('alt+shift+down', m.moveDown.bind(m))
+      shortcut.add('alt+shift+right', m.moveIn.bind(m))
+      shortcut.add('alt+shift+left', m.moveOut.bind(m))
+      shortcut.add('tab', m.moveIn.bind(m))
+      shortcut.add('shift+tab', m.moveOut.bind(m))
       shortcut.add('ctrl+down', m.copyAfterAndFocusIt.bind(m))
+      /*\
+       *  Őket Hagyjuk békén:
+       *  shift jobb-bal-ra
+       *  ctrl jobb-bal-ra
+       *  ctrl-shift jobb-bal-ra
+       *  
+       *  
+       *  
+      \*/
+    },
+    focusHeadElement: function() {
+      $(this.model.at().view.el).find('> .headline').focus()
     },
   })
 
