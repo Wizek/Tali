@@ -6,34 +6,47 @@ var log = require('log')
   , db = require('db')
   //, crypto = require('crypto')
 
-exports._sessionStore = []
+/**
+ * Storing online (logged in) users
+ */
+exports._onlineStore = {}
 
 /**
- * Session
- * @param search {object} String (for username) or any object
- * @return {object} with functions .init(), .get(), .set(), .kill()
+ * Storing the session between two socket.io connections
+ * for an environment specified by envId
+ */
+exports._sessionStore = {}
+
+/**
+ * Get a row from the session store by a searchterm
+ * @param search {object} String (envId) or any object with one term
+ * @return {object} with functions .get(), .set(), .kill()
  */
 exports.session = function(search) {
-  var foundUser = ''
   if (!search) {
-    //log.error('Nem adtál meg session kulcsszót')
+    log.error('SESSION: No searchterm was given')
     return
   }
+  if (typeof search != 'string' && typeof search != 'object') {
+    log.error('SESSION: Searchterm must be a String or an Object')
+    return
+  }
+  // Quick search just by defining the envId as a string
   if (typeof search == 'string') {
-    if (!this._sessionStore[search]) {
-      /*log.error('Nem található a hivatkozott session')
-      log.debug('Searched username: ' + search)*/
+    search = {
+      envId: search
     }
-    foundUser = search
-  } else if (search.username) {
-    if (!this._sessionStore[search.username]) {
-      /*log.error('Nem található a hivatkozott session')
-      log.debug('Searched username: ' + search)*/
+  }
+  // This will be later the key of the found session
+  var foundSessionKey = ''
+  if (search.envId) {
+    if (!this._sessionStore[search.envId]) {
+      this._sessionStore[search.envId] = {}
     }
-    foundUser = search.username
-  } else if (typeof search == 'object') {
+    foundSessionKey = search.envId
+  } else {
     if (Object.keys(search).length != 1) {
-      // log.error('Csak egyetlen paraméterre kereshetsz a sessionben')
+      log.error('SESSION: Searchterm can contain only 1 term')
       return
     }
     // Extract the first key
@@ -41,67 +54,64 @@ exports.session = function(search) {
 
     for(var key in this._sessionStore) if (this._sessionStore.hasOwnProperty(key)) {
       if (this._sessionStore[key][searchField] == search[searchField]) {
-        foundUser = key
+        foundSessionKey = key
       }
     }
-    if (!foundUser) {
-      log.error('Nem található a hivatkozott session')
-      log.debug('Searched', search)
+    if (!foundSessionKey) {
+      return false
     }
   }
  
-  var obj = {}
   var self = this
-  obj.exists = this._sessionStore[foundUser] ? true : false
-  obj.init = function() {
-    this.exists = true
-    self._sessionStore[foundUser] = {}
-  }
+  // Creating the return object
+  var obj = {}
   obj.get = function(key) {
-    if (self._sessionStore[foundUser]) {
-      if (key == 'username') {
-        return foundUser
-      } else if (self._sessionStore[foundUser][key]) {
-        return self._sessionStore[foundUser][key]
+    if (self._sessionStore[foundSessionKey]) {
+      if (key == 'envId') {
+        return foundSessionKey
+      } else if (self._sessionStore[foundSessionKey][key]) {
+        return self._sessionStore[foundSessionKey][key]
       }
     }
+    return undefined
   }
   obj.set = function(key, value) {
-    if (!self._sessionStore[foundUser]) {
-      this.init()
-    }
-    self._sessionStore[foundUser][key] = value
+    self._sessionStore[foundSessionKey][key] = value
+    return obj
   }
   obj.kill = function() {
-    if (self._sessionStore[foundUser]) {
-      delete self._sessionStore[foundUser] // Kill it!
-      this.exists = false
+    if (self._sessionStore[foundSessionKey]) {
+      delete self._sessionStore[foundSessionKey] // Kill it!
     }
   }
   return obj
 }
 
 /**
- * User login
+ * User login attempt with username and password
  * @param username {String}
  * @param password {String} Password unhashed
  * @param envId {String}
  * @param socketId {String}
- * @param cb {function} cb(err)
+ * @param cb {function} cb(err, userId)
  */
 exports.login = function (username, password, envId, socketId, cb) {
   cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
   if (typeof username != 'string')
-    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+    return cb('Username must be a String')
   
   if (typeof password != 'string')
-    return cb('A jelszónak egy Stringnek kell lennie!')
+    return cb('Password must be a String')
   
   if (typeof envId != 'string')
-    return cb('Az envId-nek Stringnek kell lennie!')
+    return cb('EnvId must be a String')
   
   if (parseInt(socketId) != socketId)
-    return cb('A socketId-nek Number-nek kell lennie!')
+    return cb('SocketId must be a Number')
   
   // TODO hash
   /*var sid = crypto
@@ -109,27 +119,41 @@ exports.login = function (username, password, envId, socketId, cb) {
     .update(Math.random().toString())
     .digest('base64')*/
   
-  var that = this
+  var self = this
   this.login._sql_login(username, password, function(err, result) {
-    if (err)
-      return cb(err)
-    
+    if (err) {
+      log.error(err)
+      return cb('Database error')
+    }
     if (parseInt(result[0].count) > 0) {
-      var mySession = that.session(username)
-      if (mySession.get('envId') == envId) {
-        return cb('Nem jelentkezhetsz be kétszer! Előbb jelentkezz ki!')
+      if (otherSession = self.session({username: username})) {
+        if (otherSession.get('envId') != envId) {
+          // TODO we must disconnect the other user
+          otherSession.kill()
+        }
       }
-      mySession.set('envId', envId)
+      var mySession = self.session(envId)
+      if (mySession.get('username')) {
+        return cb('You can not login twice')
+      }
+      var userId = result[0].id
+      mySession.set('username', username)
       mySession.set('socketId', socketId)
-      return cb()
+      mySession.set('userId', userId)
+      self._onlineStore[username] = {
+        userId: userId
+      , focus: null
+      , lock: null
+      }
+      return cb(null, userId)
     } else {
-      return cb('Nem megfelelő felhasználónév és jelszó kombináció!')
+      return cb('Wrong username and password combination')
     }
   })
 }
 
 exports.login._sql_login = function(username, password, cb) {
-  db.query('SELECT count(username) AS count FROM tali_user WHERE username=? AND password=?'
+  db.query('SELECT count(username) AS count, id FROM tali_user WHERE username=? AND password=?'
   , [username, password]
   , function(err, result) {
       return cb(err, result)
@@ -144,10 +168,18 @@ exports.login._sql_login = function(username, password, cb) {
  */
 exports.disconnect = function(socketId, cb) {
   cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
   if (parseInt(socketId) != socketId)
-    return cb('A socketId-nek Number-nek kell lennie!')
+    return cb('SocketId must be a Number')
   
-  this.session({socketId: socketId}).set('disconnectedAt', new Date())
+  var mySession = this.session({socketId: socketId})
+  mySession.set('disconnectedAt', new Date())
+  var username = mySession.get('username')
+  delete this._onlineStore[username]
+
   return cb()
 }
 
@@ -158,15 +190,19 @@ exports.disconnect = function(socketId, cb) {
  */
 exports.offlineFor = function(username, cb) {
   cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
   if (typeof username != 'string')
-    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+    return cb('Username must be a String')
   
-  if (this.session(username).get('disconnectedAt')) {
+  if (this.session({username: username}).get('disconnectedAt')) {
     // How many seconds since the disconnecting
     offlineFor = Math.round(new Date().getTime() / 1000) -
-      Math.round(this.session(username).get('disconnectedAt').getTime() / 1000)
+      Math.round(this.session({username: username}).get('disconnectedAt').getTime() / 1000)
     return cb(null, offlineFor)
-  } else if (this.session(username).exists) {
+  } else if (this.session({username: username})) {
     return cb(null, -1)
   } else {
     this.offlineFor._sql_getLastSeen(username, function(err, result) {
@@ -192,41 +228,58 @@ exports.offlineFor._sql_getLastSeen = function(username, cb) {
 }
 
 /**
- * Try to resume to a session, which was started from this envId
+ * Check if the user is logged in on this environment or not
+ * @param envId {String}
+ * @param cb {function} cb(err, isLoggedIn)
+ */
+exports.isLoggedIn = function(envId, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (typeof envId != 'string')
+    return cb('EnvId must be a String')
+
+  var session = this.session(envId)
+  if (session.get('username')) {
+    return cb(null, true)
+  } else {
+    return cb('You were not logged in at this environment')
+  }
+}
+/**
+ * Resume to a session which was started from this envId,
+ * after the connection is alive
  * @param envId {String}
  * @param newSocketId {String} The current (new) socketId
- * @param cb {function} cb(err, username)
+ * @param cb {function} cb(err, username, userid, onlineList)
  */
-exports.tryResume = function(envId, newSocketId, cb) {
+exports.resume = function(envId, newSocketId, cb) {
   cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
   if (typeof envId != 'string')
-    return cb('Az envId-nek Stringnek kell lennie!')
+    return cb('EnvId must be a String')
   
   if (parseInt(newSocketId) != newSocketId)
-    return cb('A socketId-nek Number-nek kell lennie!')
+    return cb('NewSocketId must be a Number')
   
-  var session = this.session({envId: envId})
-  if (!session.exists) {
-    return cb('Session doesn\'t exists!')
+  var session = this.session(envId)
+  if (!session.get('username')) {
+    return cb('You were not logged in at this environment')
   }
   var username = session.get('username')
-  if (!username) {
-    return cb('Session doesn\'t have a username!')
+    , userId   = session.get('userId')
+  session.set('socketId', newSocketId)
+  this._onlineStore[username] = {
+    userId: userId
+  , focus: null
+  , lock: null
   }
-  this.offlineFor(username, function(err, offlineFor) {
-    if (err) {
-      return cb(err)
-    }
-    // security is my passion :D
-    /*
-    if (offlineFor > 600) {
-      return cb('Session is over.')
-    }*/
-    if (offlineFor >= 0) {
-      session.set('socketId', newSocketId)
-      return cb(null, username)
-    }
-  })
+  return cb(null, this._onlineStore)
 }
 
 /**
@@ -236,8 +289,12 @@ exports.tryResume = function(envId, newSocketId, cb) {
  */
 exports.logout = function(envId, cb) {
   cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
   if (typeof envId != 'string')
-    return cb('Az envId-nek Stringnek kell lennie!')
+    return cb('EnvId must be a String')
 
   username = this.session({envId: envId}).get('username')
   var self = this
@@ -257,6 +314,75 @@ exports.logout._sql_updateLastSeen = function(username, cb) {
 }
 
 /**
+ * Focus on node
+ * @param nodeId {Number} Node id to focus on
+ * @param username {String} Focuser
+ * @param cb {function} cb(err)
+ */
+
+exports.setFocus = function(nodeId, username, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(nodeId) != nodeId)
+    return cb('NodeId must be a Number')
+
+  if (typeof username != 'string')
+    return cb('Username must be a String')
+
+  this._onlineStore[username]['focus'] = nodeId
+  return cb()
+}
+
+/**
+ * Lock node
+ * @param id {Number} Node id to lock
+ * @param username {String} Locker
+ * @param cb {function} cb(err)
+ */
+exports.lock = function(nodeId, username, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(nodeId) != nodeId)
+    return cb('NodeId must be a Number')
+
+  if (typeof username != 'string')
+    return cb('Username must be a String')
+
+  for (key in this._onlineStore) if (this._onlineStore.hasOwnProperty(key)) {
+    if (this._onlineStore[key]['lock'] == nodeId) {
+      return cb('Node already locked by ' + key)
+      break
+    }
+  }
+  this._onlineStore[username]['lock'] = nodeId
+  return cb()
+}
+
+/**
+ * Unlock all nodes for a user
+ * @param username {String}
+ * @param cb {function} cb(err)
+ */
+exports.unlock = function(username, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (typeof username != 'string')
+    return cb('Username must be a String')
+
+  this._onlineStore[username]['lock'] = null
+  return cb()
+}
+
+/**
  * User register
  * @param username {String}
  * @param password {String} Password unhashed
@@ -266,34 +392,37 @@ exports.logout._sql_updateLastSeen = function(username, cb) {
 exports.register = function(username, password, email, cb) {
   cb = cb || function() {}
 
+  if (typeof cb != 'function')
+    return
+
   if (typeof username != 'string')
-    return cb('A felhasználónévnek egy Stringnek kell lennie!')
+    return cb('Username must be a String')
   
   if (typeof password != 'string')
-    return cb('A jelszónak egy Stringnek kell lennie!')
+    return cb('Password must be a String')
   
   if (typeof email != 'string')
-    return cb('Az e-mail címnek egy Stringnek kell lennie!')
+    return cb('Email must be a String')
   
   if (username.length < 2 || username.length > 16)
-    return cb('A felhasználónév hosszának 2 év 16 karakter között kell lennie!')
+    return cb('Username length must be within 2 and 16 character')
   
   if (!username.match(/^[A-zÖÜÓŐÚÉÁŰÍöüóőúéáűí0-9]{2,32}$/))
-    return cb('A felhasználónév csak a magyar ábécé betűít és számokat tartalmazhat!')
+    return cb('Username can only contain characters from the hungarian alphabet and numbers')
   
   if (password.length < 8)
-    return cb('A jelszó hossza legalább 8 karakter legyen!')
+    return cb('Password length must be at least 8 character')
   
   if (!password.match(/\d/))
-    return cb('A jelszónak legalább 1 számot kell tartalmaznia!')
+    return cb('Password must contain at least 1 number')
   
   if (!email.match(/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/))
-    return cb('Hibás e-mail cím!')
+    return cb('Wrong email address')
   
   that = this
   this.register._sql_checkUsername(username, function(err, result) {
     if (result.length > 0) {
-      return cb('A felhasználónév már foglalt!')
+      return cb('This username is already taken')
     } else {
       that.register._sql_register(username, 'text', password, email
       , function(err, info) {

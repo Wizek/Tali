@@ -204,3 +204,47 @@ exports.extend = function extend(subClass, superClass) {
     superClass.prototype.constructor = superClass;
   }
 }
+
+/* TODO Maybe not the best, but working */
+exports.asyncCbChecker = function(runGoal, cb) {
+  this.cbCounter = 0
+  this.cbReal = cb
+  this.cbRunGoal = runGoal
+  this.argumentStore = []
+  var that = this
+  this.cb = function(err) {
+    that.cbCounter++
+    for (var i = 0, len = arguments.length; i < len; i++) {
+      if (that.argumentStore[i]) {
+        that.argumentStore[i].push(arguments[i])
+      } else {
+        that.argumentStore[i] = [arguments[i]]
+      }
+    }
+    if (that.cbCounter >= that.cbRunGoal) {
+      for (var i = 0, len = that.argumentStore.length; i < len; i++) {
+        var allNull = true
+        for (var j = 0, len1 = that.argumentStore[i].length; j < len1; j++) {
+          if (that.argumentStore[i][j] != null) {
+            allNull = false
+          }
+        }
+        if (allNull) {
+          that.argumentStore[i] = null
+        }
+      }
+      return that.cbReal.apply(null, that.argumentStore)
+    }
+  }
+  return this.cb
+}
+
+exports.cookiesToObject = function(cookies) {
+  cookieArray = cookies.split(';')
+  cookieObj = {}
+  for (var i = 0, len = cookieArray.length; i < len; i++) {
+    cookieData = cookieArray[i].split('=')
+    cookieObj[cookieData[0]] = cookieData[1]
+  }
+  return cookieObj
+}

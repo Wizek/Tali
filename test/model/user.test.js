@@ -4,98 +4,108 @@ var paths = require('../../app/paths')
   , user = require('user')
 
 exports['User Session Store'] = function(test) {
-  test.expect(7)
+  test.expect(13)
 
   test.equal(typeof user.session, 'function')
-  var key = 'Session key'
-  var value = 'Session value'
+  var envId = '0a1b2c3d4e5f'
+  var socketId = 123456789012345678
 
-  test.equal(user.session('Juzer').exists, false)
-  user.session('Juzer').init()
-  test.equal(user.session('Juzer').exists, true)
-  test.equal(user.session('Juzer').get('username'), 'Juzer')
-  user.session('Juzer').kill()
+  test.equal(typeof user.session(envId), 'object')
+  test.equal(typeof user.session({envId: envId}), 'object')
+  test.equal(user.session(envId).get('envId'), envId)
+  test.equal(user.session({username: 'Juzer'}), false)
+  test.equal(typeof user.session(envId).set('username', 'Juzer'), 'object')
+  test.equal(user.session(envId).get('username'), 'Juzer')
+  test.equal(user.session({username: 'Juzer'}).get('envId'), envId)
+  test.equal(typeof user.session(envId).set('socketId', socketId), 'object')
+  test.equal(user.session({socketId: socketId}).get('envId'), envId)
+  test.equal(user.session({socketId: socketId}).get('username'), 'Juzer')
+  user.session(envId).kill()
+  test.equal(user.session(envId).get('username'), undefined)
+  test.equal(user.session(envId).get('socketId'), undefined)
 
-  user.session('Juzer').set(key, value)
-  test.equal(user.session({username: 'Juzer'}).get(key), value)
-  test.equal(user.session({'Session key': value}).get('username'), 'Juzer')
-  user.session('Juzer').kill()
-  
-  test.equal(user.session('Juzer').exists, false)
+  user.session(envId).kill()
   test.done()
 }
 
 exports['User Login'] = function (test) {
-  test.expect(12)
+  test.expect(17)
 
   test.equal(typeof user.login, 'function')
   test.equal(typeof user.login._sql_login, 'function')
 
   test.doesNotThrow(function() {
     user.login(null, '', '', '0', function(err) {
-      test.equal(err, 'A felhasználónévnek egy Stringnek kell lennie!')
+      test.equal(err, 'Username must be a String')
     })
     user.login('', null, '', '0', function(err) {
-      test.equal(err, 'A jelszónak egy Stringnek kell lennie!')
+      test.equal(err, 'Password must be a String')
     })
     user.login('', '', null, '0', function(err) {
-      test.equal(err, 'Az envId-nek Stringnek kell lennie!')
+      test.equal(err, 'EnvId must be a String')
     })
     user.login('', '', '', null, function(err) {
-      test.equal(err, 'A socketId-nek Number-nek kell lennie!')
+      test.equal(err, 'SocketId must be a Number')
     })
   })
   
   user.login._sql_login = function(username, password, cb) {
     if (username == 'Juzer' && password == 'p4sSwrD') {
-      return cb(null, [{count: 1}])
+      return cb(null, [{count: 1, id: 1}])
     } else {
       return cb(null, [{count: 0}])
     }
   }
-  var envId = '0a1b2c3d4e5f'
-  var socketId = '123456789012345678'
+  var envId    = '0a1b2c3d4e5f'
+    , socketId = 123456789012345678
+
   user.login('Username', 'Password', envId, socketId, function(err) {
-    test.equal(err, 'Nem megfelelő felhasználónév és jelszó kombináció!')
+    test.equal(err, 'Wrong username and password combination')
   })
   user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
     test.equal(err, null)
-    test.equal(user.session('Juzer').get('envId'), envId)
-    test.equal(user.session('Juzer').get('socketId'), socketId)
+    test.equal(user.session(envId).get('username'), 'Juzer')
+    test.equal(user.session(envId).get('socketId'), socketId)
+    test.equal(user.session(envId).get('userId'), 1)
   })
   user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
-    test.equal(err, 'Nem jelentkezhetsz be kétszer! Előbb jelentkezz ki!')
+    test.equal(err, 'You can not login twice')
   })
-  user.session('Juzer').kill()
+  var otherEnvId = '0a1b2c3d4e5g'
+  user.login('Juzer', 'p4sSwrD', otherEnvId, socketId, function(err) {
+    test.equal(err, null)
+    test.equal(user.session(envId).get('username'), undefined)
+    test.equal(user.session(envId).get('socketId'), undefined)
+    test.equal(user.session(envId).get('userId'), undefined)
+  })
+  user.session(envId).kill()
+  user.session(otherEnvId).kill()
   test.done()
 }
 
 exports['User Disconnect'] = function(test) {
-  test.expect(6)
+  test.expect(4)
 
   test.equal(typeof user.disconnect, 'function')
 
   test.doesNotThrow(function() {
     user.disconnect(null, function(err) {
-      test.equal(err, 'A socketId-nek Number-nek kell lennie!')
+      test.equal(err, 'SocketId must be a Number')
     })
   })
 
-  var socketId = '123456789012345678'
-  var mySession = user.session('Juzer')
-  mySession.init()
+  var envId     = '0a1b2c3d4e5f'
+    , socketId  = 123456789012345678
+    , mySession = user.session(envId)
+
   mySession.set('socketId', socketId)
   user.disconnect(socketId)
-  //Ensure that he was in the last 3 seconds online
-  user.offlineFor('Juzer', function(err, offlineFor) {
-    test.equal(err, null)
-    test.ok(offlineFor <= 3)
-    test.ok(offlineFor >= 0)
-    test.done()
-  })
+  test.equal(mySession.get('disconnectedAt'), new Date().toString())
+  user.session(envId).kill()
+  test.done()
 }
 
-exports['User Online'] = function(test) {
+exports['User OfflineFor'] = function(test) {
   test.expect(3)
 
   test.equal(typeof user.offlineFor, 'function')
@@ -104,51 +114,85 @@ exports['User Online'] = function(test) {
     return cb(null, {lastSeen: new Date().toString()})
   }
   
-  user.session('Juzer').init()
+  var envId     = '0a1b2c3d4e5f'
+  user.session(envId).set('username', 'Juzer')
   user.offlineFor('Juzer', function(err, seconds) {
     test.equal(err, null)
-    // Still online
     test.equal(seconds, -1)
   })
-  user.session('Juzer').kill()
+  user.session(envId).kill()
   test.done()
 }
 
-exports['User Try Resume'] = function(test) {
+exports['User is logged in'] = function(test) {
   test.expect(8)
 
-  test.equal(typeof user.tryResume, 'function')
+  test.equal(typeof user.isLoggedIn, 'function')
 
   test.doesNotThrow(function() {
-    user.tryResume(null, 0, function(err) {
-      test.equal(err, 'Az envId-nek Stringnek kell lennie!')
-    })
-    user.tryResume('', null, function(err) {
-      test.equal(err, 'A socketId-nek Number-nek kell lennie!')
+    user.isLoggedIn(null, function(err) {
+      test.equal(err, 'EnvId must be a String')
     })
   })
 
-  var envId = '0a1b2c3d4e5f'
-  var socketId = '123456789012345678'
-  user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
+  var envId    = '0a1b2c3d4e5f'
+    , socketId = 123456789012345678
+
+  user.isLoggedIn(envId, function(err, isLoggedIn) {
+    test.equal(err, 'You were not logged in at this environment')
+  })
+
+  user.login._sql_login = function(username, password, cb) {
+    if (username == 'Juzer' && password == 'p4sSwrD') {
+      return cb(null, [{count: 1, id: 1}])
+    } else {
+      return cb(null, [{count: 0}])
+    }
+  }
+
+  user.login('Juzer', 'p4sSwrD', envId, socketId, function(err, userId) {
+    test.equal(err, null)
+    test.equal(userId, 1)
+    user.isLoggedIn(envId, function(err, isLoggedIn) {
+      test.equal(err, null)
+      test.equal(isLoggedIn, true)
+      user.session(envId).kill()
+      test.done()
+    })
+  })
+}
+
+exports['User Resume'] = function(test) {
+  test.expect(8)
+
+  test.equal(typeof user.resume, 'function')
+
+  test.doesNotThrow(function() {
+    user.resume(null, 0, function(err) {
+      test.equal(err, 'EnvId must be a String')
+    })
+    user.resume('', null, function(err) {
+      test.equal(err, 'NewSocketId must be a Number')
+    })
+  })
+
+  var envId    = '0a1b2c3d4e5f'
+    , socketId = 123456789012345678
+
+  user.login('Juzer', 'p4sSwrD', envId, socketId, function(err, userId) {
     test.equal(err, null)
     user.disconnect(socketId, function() {
-      user.session('Juzer').set('envId','0a1b2c3d4e5f')
-      user.session('Juzer').get('disconnectedAt').setMinutes(
-        user.session('Juzer').get('disconnectedAt').getMinutes() - 3
-      )
-      var envId = user.session('Juzer').get('envId')
-      // trying to resume the session after 3 minutes
-      var newSocketId = 141241535354542324
-      user.tryResume('Hablaba', newSocketId, function(err, username) {
-        test.equal(err, 'Session doesn\'t exists!')
+      var newEnvId    = '0a1b2c3d4e5g'
+        , newSocketId = '123456789012345679'
+      user.resume(newEnvId, newSocketId, function(err) {
+        test.equal(err, 'You were not logged in at this environment')
+        user.resume(envId, newSocketId, function(err, onlineList) {
+          test.deepEqual(onlineList, {Juzer: { userId: 1, focus: null, lock: null }})
+          test.equal(user.session({username: 'Juzer'}).get('socketId'), newSocketId)
+          user.session(envId).kill()
+          test.done()
+        })
       })
-      user.tryResume(envId, newSocketId, function(err, username) {
-        test.equal(username, 'Juzer')
-      })
-      test.equal(user.session('Juzer').get('socketId'), newSocketId)
-      user.session('Juzer').kill()
-      test.done()
     })
   })
 }
@@ -160,7 +204,7 @@ exports['User Logout'] = function(test) {
 
   test.doesNotThrow(function() {
     user.logout(null, function(err) {
-      test.equal(err, 'Az envId-nek Stringnek kell lennie!')
+      test.equal(err, 'EnvId must be a String')
     })
   })
 
@@ -169,16 +213,84 @@ exports['User Logout'] = function(test) {
   }
 
   var envId = '0a1b2c3d4e5f'
-  var socketId = '123456789012345678'
+  var socketId = 123456789012345678
   user.login('Juzer', 'p4sSwrD', envId, socketId, function(err) {
     test.equal(err, null)
     user.logout(envId, function(err) {
       test.equal(err, null)
+      user.offlineFor('Juzer', function(seconds) {
+        test.ok(seconds >= 0)
+        test.done()
+      })
     })
-    user.offlineFor('Juzer', function(seconds) {
-      test.ok(seconds >= 0)
+  })
+}
+
+exports['User Set Focus'] = function(test) {
+  test.expect(6)
+
+  test.equal(typeof user.setFocus, 'function')
+
+  test.doesNotThrow(function() {
+    user.setFocus(null, '', function(err) {
+      test.equal(err, 'NodeId must be a Number')
     })
+    user.setFocus(1, null, function(err) {
+      test.equal(err, 'Username must be a String')
+    })
+  })
+
+  user.setFocus(1, 'Juzer', function(err) {
+    test.equal(err, null)
+    test.equal(user._onlineStore['Juzer']['focus'], 1)
     test.done()
+  })
+
+}
+
+exports['User Lock Node'] = function(test) {
+  test.expect(8)
+
+  test.equal(typeof user.lock, 'function')
+
+  test.doesNotThrow(function() {
+    user.lock(null, '', function(err) {
+      test.equal(err, 'NodeId must be a Number')
+    })
+    user.lock(1, null, function(err) {
+      test.equal(err, 'Username must be a String')
+    })
+  })
+
+  user.lock(1, 'Juzer', function(err) {
+    test.equal(err, null)
+    test.equal(user._onlineStore['Juzer']['lock'], 1)
+    user.lock(1, 'Juzer2', function(err) {
+      test.equal(err, 'Node already locked by Juzer')
+      test.equal(user._onlineStore['Juzer']['lock'], 1)
+      user._onlineStore['Juzer']['lock'] = null
+      test.done()
+    })
+  })
+}
+
+exports['User Unlock All'] = function(test) {
+  test.expect(6)
+
+  test.equal(typeof user.unlock, 'function')
+
+  test.doesNotThrow(function() {
+    user.unlock(null, function(err) {
+      test.equal(err, 'Username must be a String')
+    })
+  })
+  user.lock(1, 'Juzer', function(err) {
+    test.equal(err, null)
+    user.unlock('Juzer', function(err) {
+      test.equal(err, null)
+      test.equal(user._onlineStore['Juzer']['lock'], null)
+      test.done()
+    })
   })
 }
 
@@ -191,13 +303,13 @@ exports['User Register'] = function(test) {
 
   test.doesNotThrow(function() {
     user.register(null, '', '', function(err) {
-      test.equal(err, 'A felhasználónévnek egy Stringnek kell lennie!')
+      test.equal(err, 'Username must be a String')
     })
     user.register('', null, '', function(err) {
-      test.equal(err, 'A jelszónak egy Stringnek kell lennie!')
+      test.equal(err, 'Password must be a String')
     })
     user.register('', '', null, function(err) {
-      test.equal(err, 'Az e-mail címnek egy Stringnek kell lennie!')
+      test.equal(err, 'Email must be a String')
     })
   })
 
@@ -210,35 +322,27 @@ exports['User Register'] = function(test) {
   }
   user.register._sql_register = function(username, password_type, password, email, cb) {
     cb(null, {insertId: 1234})
-    /*
-    if (username == 'Fodi69'
-      && email == 'fodor0205@gmail.com'
-      && password == 'p4sSwrD') {
-        cb(null, [])
-      } else {
-        cb('Registration error')
-      }*/
   }
   user.register('t', 'test', 'test@test.hu', function(err) {
-    test.equal(err, 'A felhasználónév hosszának 2 év 16 karakter között kell lennie!')
+    test.equal(err, 'Username length must be within 2 and 16 character')
   })
   user.register('#ß÷%', 'test', 'test@test.hu', function(err) {
-    test.equal(err, 'A felhasználónév csak a magyar ábécé betűít és számokat tartalmazhat!')
+    test.equal(err, 'Username can only contain characters from the hungarian alphabet and numbers')
   })
   user.register('test', 'test', 'test@test.hu', function(err) {
-    test.equal(err, 'A jelszó hossza legalább 8 karakter legyen!')
+    test.equal(err, 'Password length must be at least 8 character')
   })
   user.register('test', 'testtest', 'test@test.hu', function(err) {
-    test.equal(err, 'A jelszónak legalább 1 számot kell tartalmaznia!')
+    test.equal(err, 'Password must contain at least 1 number')
   })
   user.register('test', 'testtest12', 'test@test', function(err) {
-    test.equal(err, 'Hibás e-mail cím!')
+    test.equal(err, 'Wrong email address')
   })
   user.register('test', 'testtest12', 'test.hu', function(err) {
-    test.equal(err, 'Hibás e-mail cím!')
+    test.equal(err, 'Wrong email address')
   })
   user.register('Fodi69', 'testtest12', 'test@test.hu', function(err) {
-    test.equal(err, 'A felhasználónév már foglalt!')
+    test.equal(err, 'This username is already taken')
   })
   user.register('test', 'testtest12', 'test@test.hu', function(err, userid) {
     test.equal(err, null)

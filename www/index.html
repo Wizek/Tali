@@ -1,3 +1,119 @@
 <!DOCTYPE html>
+<!--
 <script src="/lib/require/require.js"></script>
 <script>require(['/js/main.js'])</script>
+-->
+<html>
+<head>
+  <title>WIP</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  <script src="/lib/jquery.cookie.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var g = {}
+    g.domReady = false
+    g.connReady = false
+    getEnvID() // Just so we save those microseconds too!
+    var socket = io.connect(location.origin)
+
+    socket.on('connect', function () {
+      socket.emit('set envId', getEnvID().token, function(err, isLoggedIn) {
+        g.connReady = true
+        onConnectionReady()
+        if (isLoggedIn) {
+          loggedIn()
+        }
+        // #16
+      })
+    })
+    $(onDomReady)
+    function onDomReady () {
+      g.domReady = true
+      bothReady()
+      if (!g.connReady) {
+        $('#loginBox input').attr('disabled', true)
+      }
+      //$('body').html(null)
+      $('#loginNow').click(login)
+      $('#loginBox').keypress(function(evt) {
+        // if Enter
+        if (evt.keyCode == 13) {
+          login()
+        }
+      })
+      function login () {
+        $('#loginNow').attr('disabled', true)
+        var user = $('#username').val()
+        var pass = $('#password').val()
+        socket.emit('login', user, pass, function(err) {
+          $('#loginNow').removeAttr('disabled')
+          if (err) {
+            alert(err)
+          }else{
+            loggedIn()
+          }
+        })
+      }
+    }
+    function onConnectionReady () {
+      bothReady()
+    }
+    function bothReady () {
+      if (!g.domReady || !g.connReady) return
+      $('#loginBox input').removeAttr('disabled')
+    }
+    function loggedIn () {
+      $('form#loginBox').hide()
+      socket.of('/editor')
+        .on('connect_failed', function(reason) {
+          console.error('unable to connect to namespace', reason)
+        })
+        .on('connect', function() {
+          console.info('sucessfully established a connection with the namespace');
+        })
+        .on('error', function() {
+          console.log('BAZMEG, connect_failed kellett volna hogy legyen.')
+        })
+    }
+    
+    function getEnvID (argument) {
+      var eID = $.cookie('eID')
+      var first = false
+      if (!eID) {
+        first = true
+        eID = genEnvID()
+        $.cookie('eID', eID, 365)
+      }
+      return {'first':first, 'token':eID}
+    }
+    function genEnvID () {
+      var token = ''
+      var loops = 8
+      var targetLength = 48
+      var useOfRandom = Math.pow(2,31)
+      while (token.length <= targetLength) {
+        token += (Math.random()*useOfRandom|0).toString(36)
+      }
+      return token.substring(0, targetLength)
+    }
+  </script>
+</head>
+<body>
+  <noscript><h1>Valami gond van a JavaScripteddel!</h1></noscript>
+  <form id="loginBox">
+    <table>
+      <tr>
+        <!-- <td><label for="username">Felhasználónév</label></td> -->
+        <td><input id="username" type="text" placeholder="Felhasználónév"></td>
+      </tr>
+      <tr>
+        <!-- <td><label for="password">Jelszó</label></td> -->
+        <td><input id="password" type="password" placeholder="Jelszó"></td>
+      </tr>
+      <tr>
+        <td><input id="loginNow" type="button" value="Belépek"></td>
+      </tr>
+    </table>
+  </form>
+</body>
+</html>
