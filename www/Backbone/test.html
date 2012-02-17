@@ -686,6 +686,56 @@ tree.branch('Views', function(tree) {
       tree(window.shortcut).type('object')
       tree.done(1)
     })
+    tree.branch('focus functions', function(tree) {
+      tree.branch('addNodeAfterAndFocusIt', function(tree) {
+        var f = Focus.prototype
+        var testFocus = 123
+        var i = 0
+        f.addNodeAfterAndFocusIt.apply({
+          at: function(v) {
+            if (arguments.length) {
+              tree(++i).is(2)
+              tree(v).is(testFocus)
+            }
+            return {
+              after: function(a) {
+                tree(++i).is(1)
+                tree(a instanceof Node).ok()
+              },
+              nextNode: function() {
+                return testFocus
+              }
+            }
+          }
+        })
+        tree.done(4)
+      })
+      tree.branch('expandCurrentLevel', function(tree) {
+        Focus.prototype.expandCurrentLevel.apply({
+          at: function() {
+            return {
+              expand: function() {
+                tree().pass()
+              }
+            }
+          }
+        })
+        tree.done(1)
+      })
+      tree.branch('collapseCurrentLevel', function(tree) {
+        Focus.prototype.collapseCurrentLevel.apply({
+          at: function() {
+            return {
+              collapse: function() {
+                tree().pass()
+              }
+            }
+          }
+        })
+        tree.done(1)
+      })
+      tree.done(0)
+    })
     tree.done(0)
   })
   tree.done(0)

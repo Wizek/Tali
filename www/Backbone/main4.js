@@ -266,6 +266,9 @@ void function() {
     },
     initialize: function() {
       this.view = new FocusView({model:this})
+      // _.bindAll(this, 'at', 'goUp')
+      // console.log(this)
+      // _.bind(this.goUp, this)
       this.bind('change:at', this.atChanged)
     },
     atChanged: function(focus, at) {
@@ -276,6 +279,7 @@ void function() {
       }
     },
     at: function(v) {
+      // console.log(this)
       if (arguments.length) {
         if (!v) {return}
         if (v.get('focus')) {
@@ -288,6 +292,7 @@ void function() {
       }
     },
     goUp: function() {
+      // console.log(this)
       this.at(this.at().prevNode())
     },
     goDown: function() {
@@ -299,19 +304,61 @@ void function() {
     goOut: function() {
       this.at(this.at().collection.parent)
     },
-    AddChildAfterAndFocusIt: function() {
-      this.at().after(new Node)
+    // goFlatUp: function() {}, 
+    // goFlatDown: function() {}, 
+    addNodeAfterAndFocusIt: function() {
+      // debugger
+      var t = this.at
+      console.log(this)
+      console.log(t)
+      t().after(new Node)
+      t(t().nextNode())
     },
+    deleteNodeAndFocusPrevious: function() {}, 
+    deleteNodeAndFocusNext: function() {}, 
+    expandCurrentLevel: function() {
+      this.at().expand()
+    }, 
+    collapseCurrentLevel: function() {
+      this.at().collapse()
+    }, 
+    expandAndGoIn: function() {}, 
+    // goOutAndCollapse: function() {}, 
+    moveUp: function() {}, 
+    moveDown: function() {}, 
+    // moveFlatUp: function() {}, 
+    // moveFlatDown: function() {}, 
+    moveIn: function() {}, 
+    moveOut: function() {}, 
+    copyAfterAndFocusIt: function() {}, 
   })
+  // Focus.prototype.goUp = Focus.prototype.goUp.bind(Focus.prototype)
+  // Focus.prototype.at = Focus.prototype.at.bind(Focus.prototype)
 
   window.FocusView = Backbone.View.extend({
     initialize: function() {
       var m = this.model
-      shortcut.add('ctrl+enter', m.AddChildAfterAndFocusIt)
+      console.log(this.model)
+      // window.addEventListener('click', m.goUp.bind(m), true)
+      shortcut.add('up', m.goUp.bind(m))
+      shortcut.add('down', m.goDown.bind(m))
+      shortcut.add('right', m.goIn.bind(m))
+      shortcut.add('left', m.goOut.bind(m))
+      shortcut.add('enter', m.addNodeAfterAndFocusIt.bind(m))
+      shortcut.add('backspace', m.deleteNodeAndFocusPrevious.bind(m))
+      shortcut.add('delete', m.deleteNodeAndFocusNext.bind(m))
+      shortcut.add('l', m.expandCurrentLevel.bind(m))
+      shortcut.add('h', m.collapseCurrentLevel.bind(m))
+      shortcut.add('shift+up', m.moveUp.bind(m))
+      shortcut.add('shift+down', m.moveDown.bind(m))
+      shortcut.add('shift+right', m.moveIn.bind(m))
+      shortcut.add('shift+left', m.moveOut.bind(m))
+      shortcut.add('ctrl+down', m.copyAfterAndFocusIt.bind(m))
     },
   })
 
   window.focus = new Focus({ours:true})
+  // console.log(focus.at().view.el)
 
   window.topLevel = new Children(null, {parent:null})
 }()
