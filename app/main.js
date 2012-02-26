@@ -14,17 +14,17 @@ VERSION = '0.0.6'
 APPNAME = 'Codename Tali'
 
 // Add directories to path
-var paths = require('./paths.js')
+//var paths = require('./paths.js')
 
 // UncoughtException handling. Init as soon as possible.
 // errorHandler = require('errorHandler').init()
 
-var log = require('log')
+var log = require('./log')
   //, settings = exports.settings = require('./settings.js')
-  , hlpr = require('helpers') // prototype extensions also
-  , db = require('db')
-  , app = require('expressServer')
-  , socketio = require('socket')
+  , hlpr = require('./helpers') // prototype extensions also
+  , db = require('./db')
+  , app = require('./expressServer')
+  , socketio = require('./socket')
 
 // TODO reintegrate
 // PORT = PORT_OVERRIDE || PORT

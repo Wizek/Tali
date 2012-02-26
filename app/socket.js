@@ -2,12 +2,12 @@
 /**
  * Module dependencies
  */
-var app = require('expressServer')
+var app = require('./expressServer')
   , io = require('socket.io').listen(app)
-  , log = require('log')
-  , user = require('user')
-  , node = require('node')
-  , helpers = require('helpers')
+  , log = require('./log')
+  , user = require('./model/user')
+  , node = require('./model/node')
+  , helpers = require('./helpers')
 
 /**
  * Socket.IO basic configuration

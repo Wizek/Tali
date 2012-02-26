@@ -2,9 +2,9 @@
 /**
  * Module dependencies
  */
-var log = require('log')
-  , db = require('db')
-  , helpers = require('helpers')
+var log = require('../log')
+  , db = require('../db')
+  , helpers = require('../helpers')
 
 /**
  * Constant for the maximum position

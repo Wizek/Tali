@@ -1,4 +1,4 @@
-var log = require('log')
+var log = require('./log')
 
 if (typeof debug != 'undefined') {
   module.exports = function() {
@@ -6,8 +6,8 @@ if (typeof debug != 'undefined') {
   }
 }else{
   var db = require('mysql').createClient()
-    , hlpr = require('helpers')
-    , settings = require('settings')
+    , hlpr = require('./helpers')
+    , settings = require('./settings')
 
   // TODO EPERM error when SQL isn't running
   db.enhancedConnect = function(opts) {
