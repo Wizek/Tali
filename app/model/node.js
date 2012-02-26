@@ -197,8 +197,8 @@ exports.newNode = function(parentId, aboveId, userId, cb) {
     return cb('UserId must be a Number')
 
   var _self = this
-  this._selectPosition(parentId, aboveId, function(err, abovePosition) {
-    _self._selectNextPosition(parentId, abovePosition, function(err, nextPosition) {
+  this._getPosition(parentId, aboveId, function(err, abovePosition) {
+    _self._getNextPosition(parentId, abovePosition, function(err, nextPosition) {
       var newPosition = Math.round(abovePosition + (nextPosition - abovePosition) / 2)
       _self.newNode._sql_createEmptyNode(function(err, info) {
         var newChildId = info.insertId
@@ -276,11 +276,11 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
 
   var setPositionOfMovedChilds = function(nodeIds, newPositions) {
     var firstNode = nodes[0]
-    self._selectPosition(parentId, firstNode, function(err, position) {
-      self._selectabovePosition(parentId, position, function(err, abovePosition) {
+    self._getPosition(parentId, firstNode, function(err, position) {
+      self._getAbovePosition(parentId, position, function(err, abovePosition) {
         var lastNode = nodes.pop()
-        self._selectPosition(parentId, lastNode, function(err, position) {
-          self._selectNextPosition(parentId, position, function(err, nextPosition) {
+        self._getPosition(parentId, lastNode, function(err, position) {
+          self._getNextPosition(parentId, position, function(err, nextPosition) {
             var interval = (nextPosition - abovePosition) / (nodeIds.length + 1)
             console.log('nextPosition', nextPosition)
             console.log('abovePosition', abovePosition)
@@ -317,8 +317,8 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
     })
   }
 
-  this._selectPosition(newParentId, aboveId, function(err, abovePosition) {
-    self._selectNextPosition(newParentId, abovePosition, function(err, nextPosition) {
+  this._getPosition(newParentId, aboveId, function(err, abovePosition) {
+    self._getNextPosition(newParentId, abovePosition, function(err, nextPosition) {
       var interval = (nextPosition - abovePosition) / (nodes.length + 1)
       if (interval < 1) {
         // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
