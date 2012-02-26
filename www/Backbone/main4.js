@@ -12,24 +12,27 @@ void function() {
       +'<textarea class="body"><%= body %></textarea>')
   }
   
+  Backbone.sync = function() {
+    console.log(arguments)
+  }
   window.MAX_POS = Math.pow(2,32)-1
   window.MIN_POS = 0
   window.MID_POS = iAvg(MIN_POS, MAX_POS)
-  window.Node = Backbone.Model.extend({
-    defaults: function() {
-      var o = {
-        headline: ''
-        , body: ''
-        , createdAt: new Date()
-        , updatedAt: new Date()
-        , position: MID_POS
-        , children: null
-        , expanded: true
-        , locked: false
-        , focus: null
+  window.Node = Backbone.Model.extend(
+    { defaults: function() {
+        var o =
+          { headline: ''
+          , body: ''
+          , createdAt: new Date()
+          , updatedAt: new Date()
+          , position: MID_POS
+          , children: null
+          , expanded: true
+          , locked: false
+          , focus: null
+          }
+        return o
       }
-      return o
-    }
     , initialize: function() {
       this.view = new NodeView({model:this})
       this.set({children:new Children(null, {parent:this})})
@@ -123,6 +126,7 @@ void function() {
       return this.get('children').size()
     }
     , collapse: function() {
+      console.log(this)
       this.set({expanded:false})
     }
     , expand: function() {
@@ -173,6 +177,7 @@ void function() {
       this.model.bind('change:expanded', this.changeViewExpanded, this)
       this.model.bind('change:focus', this.changeViewFocus, this)
       this.model.bind('destroy', this.destroy, this)
+      // Backbone.sync('qw', this)
       this.render()
     }
     , events: {
@@ -185,7 +190,7 @@ void function() {
     }
     , changeViewExpanded: function() {
       var e = this.model.get('expanded')
-      var t = $(this.model.get('children').view.el)
+      var t = this.model.get('children').view.$el
       t.removeClass(e?'hidden':'visible')
       t.addClass(e?'visible':'hidden')
 
@@ -197,40 +202,40 @@ void function() {
       }
       var prev = this.model.prevNode()
       if (prev) { 
-        $(prev.view.el).after(this.el)
+        prev.view.$el.after(this.$el)
       } else {
-        $(this.model.collection.view.el).prepend(this.el)
+        this.model.collection.view.$el.prepend(this.$el)
       }
     }
     , changeModelHead: function() {
       // TODO not just change event
-      var text = $(this.el).children('.headline').val()
+      var text = this.$el.children('.headline').val()
       this.model.set({headline: text})
     }
     , changeModelBody: function() {
-      var text = $(this.el).children('.body').val()
+      var text = this.$el.children('.body').val()
       this.model.set({body: text})
     }
     , changeViewHead: function() {
-      console.log('changeViewHead', this.model.get('headline'))
-      $(this.el).children('.headline').val(this.model.get('headline'))
+      // console.log('changeViewHead', this.model.get('headline'))
+      this.$el.children('.headline').val(this.model.get('headline'))
     }
     , changeViewBody: function() {
-      $(this.el).children('.body').val(this.model.get('body'))
+      this.$el.children('.body').val(this.model.get('body'))
     }
     , changeViewFocus: function(node, focus) {
       var f = node.get('focus')
       if (!f) {
-        $(this.el).removeClass('focused ours theirs')
+        this.$el.removeClass('focused ours theirs')
       } else {
-        $(this.el).addClass('focused '+(f.get('ours')?'ours':'theirs'))
+        this.$el.addClass('focused '+(f.get('ours')?'ours':'theirs'))
       }
     }
     , render: function() {
-      $(this.el).html(tplStr.node(this.model.toJSON()))
+      this.$el.html(tplStr.node(this.model.toJSON()))
     }
     , destroy: function() {
-      $(this.el).remove()
+      this.$el.remove()
     }
   })
 
