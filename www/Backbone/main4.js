@@ -11,7 +11,12 @@ void function() {
       +'<textarea class="headline"><%= headline %></textarea>'
       +'<textarea class="body"><%= body %></textarea>')
   }
-  
+
+  io.connect('/editor')
+  io.on('connect', function() {
+    console.log('yupiiii', arguments)
+    io.emit('asd')
+  })
   Backbone.sync = function() {
     console.log(arguments)
   }
