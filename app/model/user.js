@@ -2,8 +2,8 @@
 /**
  * Module dependencies
  */
-var log = require('log')
-  , db = require('db')
+var log = require('../log')
+  , db = require('../db')
   //, crypto = require('crypto')
 
 /**

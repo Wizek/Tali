@@ -340,14 +340,17 @@ exports['Moving node(s) atomic to an upper level'] = function(test) {
    *   - 5 (400)              - 9 (467)
    *   - 6 (500)              - 6 (500)
    */
-  test.expect(-1)
+  test.expect(2)
 
   node._sql_selectPosition = function(parentId, childId, cb) {
     if (parentId == 1 && childId == 5) {
       return cb(null, [{position: 400}])
     }
-    if (parentId == 3 && childId == 7) {
-      return cb(null, [{position: 300}])
+    if (parentId == 3 && childId == 8) {
+      return cb(null, [{position: 400}])
+    }
+    if (parentId == 3 && childId == 9) {
+      return cb(null, [{position: 500}])
     }
     if (parentId == 3 && childId == 10) {
       return cb(null, [{position: 600}])
@@ -358,7 +361,7 @@ exports['Moving node(s) atomic to an upper level'] = function(test) {
     if (parentId == 1 && abovePosition == 400) {
       return cb(null, [{position: 500}])
     }
-    if (parentId == 3 && abovePosition == 450) {
+    if (parentId == 3 && abovePosition == 500) {
       return cb(null, [{position: 600}])
     }
     return cb('Test error')
