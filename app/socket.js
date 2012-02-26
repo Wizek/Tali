@@ -19,7 +19,7 @@ io.configure('production', function() {
 })
 
 io.configure('development', function() {
-  io.set('log level', 2)
+  io.set('log level', 1)
 })
 
 /**
@@ -33,13 +33,13 @@ io.of('/editor').authorization(function(handshakeData, cb) {
   if(envId = cookies.eID) {
     user.isLoggedIn(envId, function(err, isLoggedIn) {
       if (err) {
-        return cb(err)
+        return cb()
       } else {
         if (isLoggedIn) {
           handshakeData.envId = envId
           return cb(null, true)
         }
-        return cb('Connection refused')
+        return cb()
       }
     })
   }
@@ -72,6 +72,7 @@ io.of('/editor').authorization(function(handshakeData, cb) {
    * @param cb {function} cb(err, results)
    */
   afterAuth['get children of'] = function(nodeId, cb) {
+    console.log('Hó födte csúcsok', arguments)
     node.getLevel(nodeId, cb)
   }
 
@@ -174,7 +175,7 @@ io.of('/editor').authorization(function(handshakeData, cb) {
     })
   }
 
-  for(e in afterAuth) if (afterAuth.hasOwnProperty(e)) {
+  for(var e in afterAuth) if (afterAuth.hasOwnProperty(e)) {
     io.of('/editor').on(e, afterAuth[e])
   }
 })

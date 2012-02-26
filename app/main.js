@@ -53,11 +53,10 @@ app.listen(PORT, function() {
         + '―――――――――――――――――――――――――――――――――――――  \n')
     }
   })
-
-  process.on('SIGINT', function() {
-    console.log()
-    log.info(color('   Terminating...',31)+' (SIGINT recieved)'
-      + '\n ● See you next time!')
-    process.exit()
-  })
+  // process.on('SIGINT', function() {
+  //   console.log()
+  //   log.info(color('   Terminating...',31)+' (SIGINT recieved)'
+  //     + '\n ● See you next time!')
+  //   process.exit()
+  // })
 })

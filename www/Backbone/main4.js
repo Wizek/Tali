@@ -1,3 +1,21 @@
+var sio = io.connect()
+  , socket = sio.socket;
+ 
+var editor = socket.of('/editor')
+  .on('connect_failed', function (reason) {
+    console.error('unable to connect to namespace', reason);
+  })
+  .on('connect', function () {
+    console.info('sucessfully established a connection with the namespace');
+    var s = sio.emit('get children of', 1, function() {
+      console.log(arguments)
+    })
+    console.log(s)
+  })
+  .on('error', function() {
+    console.log(arguments)
+  })
+
 void function() {
   window.iAvg = Math.iAvg = function(a,b) {
     Math.abs(a-b) < 10
@@ -12,13 +30,15 @@ void function() {
       +'<textarea class="body"><%= body %></textarea>')
   }
 
-  io.connect('/editor')
-  io.on('connect', function() {
-    console.log('yupiiii', arguments)
-    io.emit('asd')
-  })
+
+  // io.connect('/editor')
+  // console.log(io)
+  // io.on('connect', function() {
+  //   console.log('yupiiii', arguments)
+  //   io.emit('asd')
+  // })
   Backbone.sync = function() {
-    console.log(arguments)
+    console.log('Backbone.sync', arguments)
   }
   window.MAX_POS = Math.pow(2,32)-1
   window.MIN_POS = 0
