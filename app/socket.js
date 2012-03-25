@@ -18,9 +18,7 @@ io.configure('production', function() {
   io.set('log level', 1)
 })
 
-io.configure('development', function() {
-  io.set('log level', 1)
-})
+io.set('log level', 0)
 
 /**
  * Authorization before accepting a new connection to the editor namespace
@@ -28,7 +26,7 @@ io.configure('development', function() {
  * is refused by the server, or emits a 'connect' event on the client side,
  * if the new connection is accepted and ready
  */
-io.of('/editor').authorization(function(handshakeData, cb) {
+/*io.of('/editor').authorization(function(handshakeData, cb) {
   cookies = helpers.cookiesToObject(handshakeData.headers.cookie)
   if(envId = cookies.eID) {
     user.isLoggedIn(envId, function(err, isLoggedIn) {
@@ -44,13 +42,93 @@ io.of('/editor').authorization(function(handshakeData, cb) {
     })
   }
 }).on('connection', function(socket) {
-  user.resume(socket.handshake.envId, socket.id, function(err, onlineList) {
-    socket.get('username', function(err, username) {
-      socket.get('userId', function(err, userId) {
-        socket.broadcast.emit('user joined', username, userId)
+  
+})*/
+
+
+
+  
+//})
+
+io.sockets.on('connection', function (socket) {
+  var fn = {}
+  /**
+   * Setting environment (browser) ID on the beginning of a connection
+   * If this browser was already logged in, it returns true otherwise an error
+   * @param envId {String} environment (browser) Id
+   * @param cb {function} cb(err, isLoggedIn)
+   */
+  fn['set envId'] = function(envId, cb) {
+    socket.set('envId', envId, function() {
+      user.isLoggedIn(envId, function(err, isLoggedIn) {
+        if (err) {
+          return cb(err)
+        } else {
+          if (isLoggedIn) {
+            for(var e in afterAuth) if (afterAuth.hasOwnProperty(e)) {
+              socket.on(e, afterAuth[e])
+            }
+            user.resume(envId, socket.id, function(err, username, userId, onlineList) {
+              socket.set('username', username)
+              socket.set('userId', userId)
+              socket.broadcast.emit('user joined', username, userId)
+            })
+            return cb(null, true)
+          } else {
+            return cb('Not logged in yet')
+          }
+        }
       })
     })
-  })
+  }
+
+  /**
+   * User login attempt with a username and a password
+   * If the login is successful, it stores some info, broadcasts a
+   * 'user joined' event, and initilializating the afterAuth functions,
+   * then returns the userId to this username
+   * @param username {String}
+   * @param password {String} Password unhashed
+   * @param cb {function} cb(err, userId)
+   */
+  fn['login'] = function(username, password, cb) {
+    socket.get('envId', function(err, envId) {
+      user.login(username, password, envId, socket.id, function(err, userId) {
+        if (err) {
+          return cb(err)
+        } else {
+          socket.set('username', username)
+          socket.set('userId', userId)
+          // todo
+          for (var e in afterAuth) if (afterAuth.hasOwnProperty(e)) {
+            socket.on(e, afterAuth[e])
+          }
+          return cb(err, userId)
+        }
+      })
+    })
+  }
+
+  /**
+   * User registration attempt
+   * If the registration is successful, it returns the newly generated userId
+   * otherwise a string with the error
+   * @param username {String}
+   * @param password {String}
+   * @param email {String}
+   * @param cb {function} cb(err, userId)
+   */
+  fn['register'] = function(username, password, email, cb) {
+    user.register(username, password, email, cb)
+  }
+
+  /**
+   * Bind the functions to the Socket.IO events
+   */
+  for (var e in fn) if (fn.hasOwnProperty(e)) {
+    socket.on(e, fn[e])
+  }
+
 
   var afterAuth = {}
 
@@ -72,7 +150,6 @@ io.of('/editor').authorization(function(handshakeData, cb) {
    * @param cb {function} cb(err, results)
    */
   afterAuth['get children of'] = function(nodeId, cb) {
-    console.log('Hó födte csúcsok', arguments)
     node.getLevel(nodeId, cb)
   }
 
@@ -106,7 +183,7 @@ io.of('/editor').authorization(function(handshakeData, cb) {
     socket.set('lock', nodeId)
     socket.get('username', function(err, username) {
       user.lock(nodeId, username, cb)
-      socket.broadcast.emit('change lock', nodeId, username)
+      socket.broadcast.emit('lock', nodeId, username)
     })
   }
 
@@ -118,6 +195,7 @@ io.of('/editor').authorization(function(handshakeData, cb) {
     socket.set('lock', null)
     socket.get('username', function(err, username) {
       user.unlock(username, cb)
+      socket.broadcast.emit('unlock', username)
     })
   }
 
@@ -175,75 +253,4 @@ io.of('/editor').authorization(function(handshakeData, cb) {
     })
   }
 
-  for(var e in afterAuth) if (afterAuth.hasOwnProperty(e)) {
-    io.of('/editor').on(e, afterAuth[e])
-  }
-})
-
-io.sockets.on('connection', function (socket) {
-  var fn = {}
-  /**
-   * Setting environment (browser) ID on the beginning of a connection
-   * If this browser was already logged in, it returns true otherwise an error
-   * @param envId {String} environment (browser) Id
-   * @param cb {function} cb(err, isLoggedIn)
-   */
-  fn['set envId'] = function(envId, cb) {
-    socket.set('envId', envId, function() {
-      user.isLoggedIn(envId, function(err, isLoggedIn) {
-        if (err) {
-          return cb(err)
-        } else {
-          if (isLoggedIn) {
-            return cb(null, true)
-          } else {
-            return cb('Not logged in yet')
-          }
-        }
-      })
-    })
-  }
-
-  /**
-   * User login attempt with a username and a password
-   * If the login is successful, it stores some info, broadcasts a
-   * 'user joined' event, and initilializating the afterAuth functions,
-   * then returns the userId to this username
-   * @param username {String}
-   * @param password {String} Password unhashed
-   * @param cb {function} cb(err, userId)
-   */
-  fn['login'] = function(username, password, cb) {
-    socket.get('envId', function(err, envId) {
-      user.login(username, password, envId, socket.id, function(err, userId) {
-        if (err) {
-          return cb(err)
-        } else {
-          socket.set('username', username)
-          socket.set('userId', userId)
-          return cb(err, userId)
-        }
-      })
-    })
-  }
-
-  /**
-   * User registration attempt
-   * If the registration is successful, it returns the newly generated userId
-   * otherwise a string with the error
-   * @param username {String}
-   * @param password {String}
-   * @param email {String}
-   * @param cb {function} cb(err, userId)
-   */
-  fn['register'] = function(username, password, email, cb) {
-    user.register(username, password, email, cb)
-  }
-
-  /**
-   * Bind the functions to the Socket.IO events
-   */
-  for(e in fn) if (fn.hasOwnProperty(e)) {
-    socket.on(e, fn[e])
-  }
 })

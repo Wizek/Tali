@@ -7,10 +7,10 @@
 <script type="text/javascript" src="backbone.js"></script>
 <script type="text/javascript" src="main4.js"></script>
 <style type="text/css">
-.focused.ours {
+.focused.ours > .headline {
   background:#888;
 }
-.focused.theirs {
+.focused.theirs > .headline {
   background:#DDD;
 }
 .body {
@@ -19,16 +19,6 @@
 </style>
 <script type="text/javascript">
 var interface = new Interface
-var topLevel = new Children
-var n = new Node
-var n2 = new Node
-// var f = new Focus
 $('body').append(interface.el)
 $(interface.el).append(topLevel.view.el)
-topLevel.append(n2)
-topLevel.append(n)
-focus.at(n)
-var f = focus.goUp
-// window.addEventListener('click', focus.goUp, false)
-// f.apply({a:1})
 </script>

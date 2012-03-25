@@ -285,8 +285,8 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
             console.log('nextPosition', nextPosition)
             console.log('abovePosition', abovePosition)
             console.log('interval', interval)
-            if (interval < 1) {
-              // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
+            if (interval < 10) {
+              log.error('// MUST REFRACTOR ALL POSITIONS IN THIS LEVEL', nodeIds, parentId, inverval)
             }
             var forCb = new helpers.asyncCbChecker(nodeIds.length, function(err) {
               if (err) {
@@ -320,8 +320,8 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
   this._getPosition(newParentId, aboveId, function(err, abovePosition) {
     self._getNextPosition(newParentId, abovePosition, function(err, nextPosition) {
       var interval = (nextPosition - abovePosition) / (nodes.length + 1)
-      if (interval < 1) {
-        // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
+      if (interval < 10) {
+        log.error('// MUST REFRACTOR ALL POSITIONS IN THIS LEVEL', nodeIds, parentId, inverval)
       }
       self.move._sql_updateParents(parentId, nodes, newParentId, function(err, info) {
         if (err) {
@@ -384,7 +384,7 @@ exports.move._sql_setPosition = function(parentId, childId, newPosition, cb) {
 }
 
 /**
- * Copy one or more nodes to an other position
+ * Copy one or more nodes to an other location
  * @param parentId {Number} Current parent of the copied nodes
  * @param nodes {Array} Array of node IDs
  * @param newParentId {Number} The new parent ID of the copied nodes

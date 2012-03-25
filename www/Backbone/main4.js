@@ -1,21 +1,3 @@
-var sio = io.connect()
-  , socket = sio.socket;
- 
-var editor = socket.of('/editor')
-  .on('connect_failed', function (reason) {
-    console.error('unable to connect to namespace', reason);
-  })
-  .on('connect', function () {
-    console.info('sucessfully established a connection with the namespace');
-    var s = sio.emit('get children of', 1, function() {
-      console.log(arguments)
-    })
-    console.log(s)
-  })
-  .on('error', function() {
-    console.log(arguments)
-  })
-
 void function() {
   window.iAvg = Math.iAvg = function(a,b) {
     Math.abs(a-b) < 10
@@ -27,6 +9,7 @@ void function() {
       +'<span class="handle minus">-</span>'
       +'<span class="handle dot">&nbsp;</span>'
       +'<textarea class="headline"><%= headline %></textarea>'
+      +'<span class="focusedBy"></span>'
       +'<textarea class="body"><%= body %></textarea>')
   }
 
@@ -48,8 +31,8 @@ void function() {
         var o =
           { headline: ''
           , body: ''
-          , createdAt: new Date()
-          , updatedAt: new Date()
+          , created_at: new Date()
+          , updated_at: new Date()
           , position: MID_POS
           , children: null
           , expanded: true
@@ -59,13 +42,29 @@ void function() {
         return o
       }
     , initialize: function() {
+      if (this.get('childnum') > 0) {
+        var self = this
+        window.socket.emit('get children of', this.get('id'), function(err, results) {
+          for (var i in results) {
+            var n = new Node(results[i])
+            self.appendChild(n)
+          }
+        })
+        topLevel.cache[this.get('id')] = this
+      }
       this.view = new NodeView({model:this})
       this.set({children:new Children(null, {parent:this})})
       this.bind('change:body', updateUpdatedAt)
+      this.bind('change:headline', function() {
+        socket.emit('edit headline', this.get('headline'), function() {
+          console.log(arguments)
+        })
+      })
       this.bind('change:headline', updateUpdatedAt)
       this.bind('change:position', updateUpdatedAt)
+      //this.bind('change:id', function(){console.log('ID VÁLTOZOTT', arguments)})
       function updateUpdatedAt (self) {
-        self.set({'updatedAt':new Date()})
+        self.set({'updated_at':new Date()})
       }
     }
     , prevPos: function() {
@@ -202,8 +201,8 @@ void function() {
       this.model.bind('change:expanded', this.changeViewExpanded, this)
       this.model.bind('change:focus', this.changeViewFocus, this)
       this.model.bind('destroy', this.destroy, this)
-      // Backbone.sync('qw', this)
       this.render()
+      $(this.el).find('> .headline').click(this.changeModelFocus.bind(this))
     }
     , events: {
       'change .headline': 'changeModelHead',
@@ -212,13 +211,13 @@ void function() {
       'change .body': 'changeModelBody',
       'keyup .body': 'changeModelBody',
       'blur .body': 'changeModelBody',
+      //'click .plus': 'changeModelFocus',
     }
     , changeViewExpanded: function() {
       var e = this.model.get('expanded')
       var t = this.model.get('children').view.$el
       t.removeClass(e?'hidden':'visible')
       t.addClass(e?'visible':'hidden')
-
     }
     , changeViewPosition: function() {
       var coll = this.model.collection
@@ -240,6 +239,9 @@ void function() {
     , changeModelBody: function() {
       var text = this.$el.children('.body').val()
       this.model.set({body: text})
+    }
+    , changeModelFocus: function() {
+      focus.at(this.model)
     }
     , changeViewHead: function() {
       // console.log('changeViewHead', this.model.get('headline'))
@@ -288,9 +290,67 @@ void function() {
     , initialize: function () {
       _.bindAll(this, 'render')
       this.render()
+      var socket = window.socket = io.connect('http://fodi69.dyndns.org:3000');
+      socket.on('connect', function (data) {
+        //console.info('sucessfully established a connection with the namespace')
+        socket.emit('set envId', 'eg14g14g14241g1', function(err, isLoggedIn) {
+          if (err) {
+            console.log('még nem voltam belépve')
+            console.log('belépek')
+            socket.emit('login', 'Fodi69', 'mypass', function(err, userId) {
+              if (err) {
+                console.error(err)
+              } else {
+                console.log('sikeres belépés', userId)
+              }
+            });
+          } else {
+            if (isLoggedIn) {
+              console.log('már be voltam lépve')
+              socket.on('user joined', function(username, userId) {
+                var el = $('<div class="notification">').text(username + ' csatlakozott.')
+                el.prependTo('#notifications')
+                setTimeout(function() {
+                  el.remove()
+                }, 5000)
+              })
+              socket.on('user left', function(username, userId) {
+                var el = $('<div class="notification">').text(username + ' szétkapcsolt.')
+                el.prependTo('#notifications')
+                setTimeout(function() {
+                  el.remove()
+                }, 5000)
+              })
+              socket.on('change focus', function(nodeId, username) {
+                var c = topLevel.cache[nodeId]
+                if (!asd[username]) {
+                  asd[username] = new Focus({ours:false, username:username})
+                }
+                asd[username].at(c)
+                //f.at(c)
+                console.log(arguments)
+              })
+              socket.on('change headline', function(nodeId, newHeadline, username) {
+                topLevel.cache[nodeId].set('headline', newHeadline)
+              })
+              socket.emit('get children of', 0, function(err, results) {
+                for (var i in results) {
+                  var n = new Node(results[i])
+                  if (i == 0) {
+                    focus.at(n)
+                  }
+                  topLevel.append(n)
+                }
+                //console.log('bóó', arguments)
+              })
+            }
+          }
+        })
+      })
+
     }
     , render:function() {
-      $(this.el).append("<ul></ul>")
+      $(this.el).append('<div id="notifications"></div><ul></ul>')
     }
   })
 
@@ -307,6 +367,12 @@ void function() {
       this.bind('change:at', this.atChanged)
     },
     atChanged: function(focus, at) {
+      socket.emit('set focus', at.get('id'), function() {
+        console.log(arguments)
+      })
+      socket.emit('lock', at.get('id'), function() {
+        console.log(arguments)
+      })
       at.set({focus:focus})
       var prev = focus.previousAttributes()
       if (prev.at) {
@@ -430,4 +496,6 @@ void function() {
   // console.log(focus.at().view.el)
 
   window.topLevel = new Children(null, {parent:null})
+  window.topLevel.cache = {}
+  window.asd = {}
 }()

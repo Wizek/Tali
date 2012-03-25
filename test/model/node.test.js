@@ -1,7 +1,6 @@
 var debug = true
 
-var paths = require('../../app/paths')
-  , node = require('node')
+var node = require('../../app/model/node')
 
 exports['Node get level'] = function(test) {
   test.expect(6)
