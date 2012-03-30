@@ -68,7 +68,10 @@ io.sockets.on('connection', function (socket) {
             for(var e in afterAuth) if (afterAuth.hasOwnProperty(e)) {
               socket.on(e, afterAuth[e])
             }
-            user.resume(envId, socket.id, function(err, username, userId, onlineList) {
+            user.resume(envId, socket.id, function(err, username, userId, onlineList, prevSocketId) {
+              if (prevSocketId) {
+                socket.namespace.sockets[prevSocketId].disconnect()
+              }
               socket.set('username', username)
               socket.set('userId', userId)
               socket.broadcast.emit('user joined', username, userId)
@@ -93,7 +96,7 @@ io.sockets.on('connection', function (socket) {
    */
   fn['login'] = function(username, password, cb) {
     socket.get('envId', function(err, envId) {
-      user.login(username, password, envId, socket.id, function(err, userId) {
+      user.login(username, password, envId, socket.id, function(err, userId, prevSocketId) {
         if (err) {
           return cb(err)
         } else {

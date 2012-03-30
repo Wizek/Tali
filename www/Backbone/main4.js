@@ -307,19 +307,18 @@ void function() {
           } else {
             if (isLoggedIn) {
               console.log('már be voltam lépve')
-              socket.on('user joined', function(username, userId) {
-                var el = $('<div class="notification">').text(username + ' csatlakozott.')
-                el.prependTo('#notifications')
-                setTimeout(function() {
-                  el.remove()
+              var notify = function(message) {
+                var el = $('<div class="notification">').text(message)
+                  el.prependTo('#notifications')
+                  setTimeout(function() {
+                    el.remove()
                 }, 5000)
+              }
+              socket.on('user joined', function(username, userId) {
+                notify(username + ' csatlakozott.')
               })
               socket.on('user left', function(username, userId) {
-                var el = $('<div class="notification">').text(username + ' szétkapcsolt.')
-                el.prependTo('#notifications')
-                setTimeout(function() {
-                  el.remove()
-                }, 5000)
+                notify(username + ' szétkapcsolt.')
               })
               socket.on('change focus', function(nodeId, username) {
                 var c = topLevel.cache[nodeId]
@@ -332,6 +331,9 @@ void function() {
               })
               socket.on('change headline', function(nodeId, newHeadline, username) {
                 topLevel.cache[nodeId].set('headline', newHeadline)
+              })
+              socket.on('disconnect', function() {
+                notify('Szétkapcsoltál')
               })
               socket.emit('get children of', 0, function(err, results) {
                 for (var i in results) {

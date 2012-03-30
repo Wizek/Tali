@@ -169,16 +169,18 @@ exports.login._sql_login = function(username, password, cb) {
 exports.disconnect = function(socketId, cb) {
   cb = cb || function() {}
 
-  if (typeof cb != 'function')
+  /*if (typeof cb != 'function')
     return
 
   if (parseInt(socketId) != socketId)
     return cb('SocketId must be a Number')
   
   var mySession = this.session({socketId: socketId})
-  mySession.set('disconnectedAt', new Date())
-  var username = mySession.get('username')
-  delete this._onlineStore[username]
+  //if (mySession) {
+    //mySession.set('disconnectedAt', new Date())
+    //var username = mySession.get('username')
+    //delete this._onlineStore[username]
+  //}*/
 
   return cb()
 }
@@ -253,7 +255,7 @@ exports.isLoggedIn = function(envId, cb) {
  * after the connection is alive
  * @param envId {String}
  * @param newSocketId {String} The current (new) socketId
- * @param cb {function} cb(err, username, userId, onlineList)
+ * @param cb {function} cb(err, username, userId, onlineList, prevSocketId)
  */
 exports.resume = function(envId, newSocketId, cb) {
   cb = cb || function() {}
@@ -273,13 +275,14 @@ exports.resume = function(envId, newSocketId, cb) {
   }
   var username = session.get('username')
     , userId   = session.get('userId')
+  var prevSocketId = session.get('socketId')
   session.set('socketId', newSocketId)
   this._onlineStore[username] = {
     userId: userId
   , focus: null
   , lock: null
   }
-  return cb(null, username, userId, this._onlineStore)
+  return cb(null, username, userId, this._onlineStore, prevSocketId)
 }
 
 /**
