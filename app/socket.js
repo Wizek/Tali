@@ -42,12 +42,12 @@ io.set('log level', 0)
     })
   }
 }).on('connection', function(socket) {
-  
+
 })*/
 
 
 
-  
+
 //})
 
 io.sockets.on('connection', function (socket) {
@@ -173,6 +173,17 @@ io.sockets.on('connection', function (socket) {
       })
     })
   }
+  // * shortcut
+  afterAuth['new node by position'] = function(parentId, position, cb) {
+    socket.get('userId', function(err, userId) {
+      socket.get('username', function(err, username) {
+        node._s_newNode(parentId, position, userId, function(err, nodeId, nodePosition) {
+          socket.broadcast.emit('new node', parentId, nodeId, nodePosition, username)
+          return cb(err, nodeId, nodePosition)
+        })
+      })
+    })
+  }
 
   /**
    * Locks a node for editing
@@ -211,6 +222,16 @@ io.sockets.on('connection', function (socket) {
         socket.get('username', function(err, username) {
           socket.broadcast.emit('change headline', lockId, newText, username)
         })
+      })
+    })
+  }
+
+  // * shortcut
+  afterAuth['edit headline of node'] = function(newText, nodeId, cb) {
+    socket.get('userId', function(err, userId) {
+      node.editHeadline(nodeId, newText, userId, cb)
+      socket.get('username', function(err, username) {
+        socket.broadcast.emit('change headline', nodeId, newText, username)
       })
     })
   }

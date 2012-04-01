@@ -5,11 +5,13 @@ void function() {
   }
   var tplStr = {
     node: _.template(''
-      +'<span class="handle plus">+</span>'
-      +'<span class="handle minus">-</span>'
-      +'<span class="handle dot">&nbsp;</span>'
-      +'<textarea class="headline"><%= headline %></textarea>'
-      +'<span class="focusedBy"></span>'
+      // +'<span class="line">'
+        +'<span class="handle plus">+</span>'
+        +'<span class="handle minus">-</span>'
+        +'<span class="handle dot">&nbsp;</span>'
+        +'<textarea class="headline"><%= headline %></textarea>'
+        +'<span class="focusedBy"></span>'
+      // +'</span>'
       +'<textarea class="body"><%= body %></textarea>')
   }
 
@@ -45,8 +47,10 @@ void function() {
       if (this.get('childnum') > 0) {
         var self = this
         window.socket.emit('get children of', this.get('id'), function(err, results) {
+          console.log('get children of cb', arguments)
           for (var i in results) {
             var n = new Node(results[i])
+            // n.isNew = false
             self.appendChild(n)
           }
         })
@@ -56,8 +60,8 @@ void function() {
       this.set({children:new Children(null, {parent:this})})
       this.bind('change:body', updateUpdatedAt)
       this.bind('change:headline', function() {
-        socket.emit('edit headline', this.get('headline'), function() {
-          console.log(arguments)
+        socket.emit('edit headline of node', this.get('headline'), this.get('id'), function() {
+          console.log('edit headline of node cb', arguments)
         })
       })
       this.bind('change:headline', updateUpdatedAt)
@@ -202,7 +206,7 @@ void function() {
       this.model.bind('change:focus', this.changeViewFocus, this)
       this.model.bind('destroy', this.destroy, this)
       this.render()
-      $(this.el).find('> .headline').click(this.changeModelFocus.bind(this))
+      $(this.el).find('> .headline').mousedown(this.changeModelFocus.bind(this))
     }
     , events: {
       'change .headline': 'changeModelHead',
@@ -225,7 +229,7 @@ void function() {
         return console.warn('Changed position of an orphan node', this)
       }
       var prev = this.model.prevNode()
-      if (prev) { 
+      if (prev) {
         prev.view.$el.after(this.$el)
       } else {
         this.model.collection.view.$el.prepend(this.$el)
@@ -282,75 +286,82 @@ void function() {
         $(p.view.el).append(this.el)
       }
     }
-    // , 
+    // ,
   })
   window.Interface = Backbone.View.extend({
     className: 'tali-top'
     , tagName: 'div'
     , initialize: function () {
+      window.title = 'Tali WIP'
       _.bindAll(this, 'render')
       this.render()
-      var socket = window.socket = io.connect('http://fodi69.dyndns.org:3000');
+      var socket = window.socket = io.connect('http://localhost:3000');
       socket.on('connect', function (data) {
         //console.info('sucessfully established a connection with the namespace')
-        socket.emit('set envId', 'eg14g14g14241g1', function(err, isLoggedIn) {
-          if (err) {
-            console.log('még nem voltam belépve')
-            console.log('belépek')
-            socket.emit('login', 'Fodi69', 'mypass', function(err, userId) {
-              if (err) {
-                console.error(err)
-              } else {
-                console.log('sikeres belépés', userId)
-              }
-            });
-          } else {
-            if (isLoggedIn) {
-              console.log('már be voltam lépve')
-              socket.on('user joined', function(username, userId) {
-                var el = $('<div class="notification">').text(username + ' csatlakozott.')
-                el.prependTo('#notifications')
-                setTimeout(function() {
-                  el.remove()
-                }, 5000)
-              })
-              socket.on('user left', function(username, userId) {
-                var el = $('<div class="notification">').text(username + ' szétkapcsolt.')
-                el.prependTo('#notifications')
-                setTimeout(function() {
-                  el.remove()
-                }, 5000)
-              })
-              socket.on('change focus', function(nodeId, username) {
-                var c = topLevel.cache[nodeId]
-                if (!asd[username]) {
-                  asd[username] = new Focus({ours:false, username:username})
+        tryToConnect()
+        function tryToConnect () {
+          socket.emit('set envId', 'eg14g14g14241g1', function(err, isLoggedIn) {
+            if (err) {
+              console.log('még nem voltam belépve')
+              console.log('belépek')
+              socket.emit('login', 'Fodi69', 'mypass', function(err, userId) {
+                if (err) {
+                  console.error(err)
+                } else {
+                  console.log('sikeres belépés', userId)
+                  tryToConnect()
                 }
-                asd[username].at(c)
-                //f.at(c)
-                console.log(arguments)
-              })
-              socket.on('change headline', function(nodeId, newHeadline, username) {
-                topLevel.cache[nodeId].set('headline', newHeadline)
-              })
-              socket.emit('get children of', 0, function(err, results) {
-                for (var i in results) {
-                  var n = new Node(results[i])
-                  if (i == 0) {
-                    focus.at(n)
+              });
+            } else {
+              if (isLoggedIn) {
+                console.log('már be voltam lépve')
+                socket.on('user joined', function(username, userId) {
+                  var el = $('<div class="notification">').text(username + ' csatlakozott.')
+                  el.prependTo('#notifications')
+                  setTimeout(function() {
+                    el.remove()
+                  }, 5000)
+                })
+                socket.on('user left', function(username, userId) {
+                  var el = $('<div class="notification">').text(username + ' szétkapcsolt.')
+                  el.prependTo('#notifications')
+                  setTimeout(function() {
+                    el.remove()
+                  }, 5000)
+                })
+                socket.on('change focus', function(nodeId, username) {
+                  var c = topLevel.cache[nodeId]
+                  if (!asd[username]) {
+                    asd[username] = new Focus({ours:false, username:username})
                   }
-                  topLevel.append(n)
-                }
-                //console.log('bóó', arguments)
-              })
+                  asd[username].at(c)
+                  //f.at(c)
+                  console.log(arguments)
+                })
+                socket.on('change headline', function(nodeId, newHeadline, username) {
+                  topLevel.cache[nodeId].set('headline', newHeadline)
+                })
+                socket.emit('get children of', 0, function(err, results) {
+                  console.log('get children of cb')
+                  for (var i in results) {
+                    var n = new Node(results[i])
+                    if (i == 0) {
+                      focus.at(n)
+                    }
+                    // n.isNew = false
+                    topLevel.append(n)
+                  }
+                  //console.log('bóó', arguments)
+                })
+              }
             }
-          }
-        })
+          })
+        }
       })
 
     }
     , render:function() {
-      $(this.el).append('<div id="notifications"></div><ul></ul>')
+      $(this.el).append('<div id="notifications"></div>')
     }
   })
 
@@ -368,11 +379,12 @@ void function() {
     },
     atChanged: function(focus, at) {
       socket.emit('set focus', at.get('id'), function() {
-        console.log(arguments)
+        console.log('set focus cb', arguments)
       })
-      socket.emit('lock', at.get('id'), function() {
-        console.log(arguments)
-      })
+      // * shortcut
+      //socket.emit('lock', at.get('id'), function() {
+      //  console.log(arguments)
+      //})
       at.set({focus:focus})
       var prev = focus.previousAttributes()
       if (prev.at) {
@@ -405,12 +417,27 @@ void function() {
     goOut: function() {
       this.at(this.at().collection.parent)
     },
-    // goFlatUp: function() {}, 
-    // goFlatDown: function() {}, 
+    // goFlatUp: function() {},
+    // goFlatDown: function() {},
     addNodeAfterAndFocusIt: function() {
       var t = this.at
-      t().after(new Node)
-      t(t().nextNode())
+      var n = new Node
+      t().after(n)
+      var parentId = t().collection.parent? t().collection.parent.get('id') :0
+      // debugger
+      //if (t().isNew) {
+        console.log('emitting new node by position'
+          , parentId, n.get('position'))
+        socket.emit('new node by position', parentId
+            , n.get('position'), function(err, nodeId, nodePosition) {
+          console.log('new node by position cb', arguments)
+          n.set('id', nodeId)
+          // if (!err) {
+          //   n.isNew = false
+          // }
+          t(n)
+        })
+      //}
     },
     deleteNodeAndFocusPrevious: function() {
       var t = this.at()
@@ -419,35 +446,36 @@ void function() {
       t.prevNode().set({headline: prevHead+ourHead})
       this.at(t.prevNode())
       t.delete()
-    }, 
-    deleteNodeAndFocusNext: function() {}, 
+      return prevHead.length
+    },
+    deleteNodeAndFocusNext: function() {},
     expandCurrentLevel: function() {
       this.at().expand()
-    }, 
+    },
     collapseCurrentLevel: function() {
       this.at().collapse()
-    }, 
-    expandAndGoIn: function() {}, 
-    // goOutAndCollapse: function() {}, 
+    },
+    expandAndGoIn: function() {},
+    // goOutAndCollapse: function() {},
     moveUp: function() {
       this.at().moveUp()
       this.view.focusHeadElement()
-    }, 
+    },
     moveDown: function() {
       this.at().moveDown()
       this.view.focusHeadElement()
-    }, 
-    // moveFlatUp: function() {}, 
-    // moveFlatDown: function() {}, 
+    },
+    // moveFlatUp: function() {},
+    // moveFlatDown: function() {},
     moveIn: function() {
       this.at().moveIn()
       this.view.focusHeadElement()
-    }, 
+    },
     moveOut: function() {
       this.at().moveOut()
       this.view.focusHeadElement()
-    }, 
-    copyAfterAndFocusIt: function() {}, 
+    },
+    copyAfterAndFocusIt: function() {},
   })
   // Focus.prototype.goUp = Focus.prototype.goUp.bind(Focus.prototype)
   // Focus.prototype.at = Focus.prototype.at.bind(Focus.prototype)
@@ -455,6 +483,7 @@ void function() {
   window.FocusView = Backbone.View.extend({
     initialize: function() {
       var m = this.model
+      _self = this
       this.model.bind('change:at', this.focusHeadElement, this)
       this.model.bind('destroy', this.destroy, this)
       // _.bindAll(this, 'focusHeadElement')
@@ -466,10 +495,24 @@ void function() {
       shortcut.add('alt+right', m.goIn.bind(m))
       shortcut.add('alt+left', m.goOut.bind(m))
       shortcut.add('enter', m.addNodeAfterAndFocusIt.bind(m))
-      shortcut.add('backspace', m.deleteNodeAndFocusPrevious.bind(m))
-      shortcut.add('delete', m.deleteNodeAndFocusNext.bind(m))
-      shortcut.add('l', m.expandCurrentLevel.bind(m))
-      shortcut.add('h', m.collapseCurrentLevel.bind(m))
+
+      shortcut.add('backspace', function() {
+        console.log('Duty calls!', arguments)
+        var _ref
+        _ref = m.at().view.$el.find('> .headline').get(0)
+        console.log()
+        // If the cursore is at the beginning
+        if (_ref.selectionStart == 0 && _ref.selectionEnd == 0) {
+          var at = m.deleteNodeAndFocusPrevious.apply(m)
+          m.at().view.$el.find('> .headline').get(0).setSelectionRange(at, at)
+        }
+      }, {
+        propagate: true
+      })
+
+      // shortcut.add('delete', m.deleteNodeAndFocusNext.bind(m))
+      shortcut.add('alt+l', m.expandCurrentLevel.bind(m))
+      shortcut.add('alt+h', m.collapseCurrentLevel.bind(m))
       shortcut.add('alt+shift+up', m.moveUp.bind(m))
       shortcut.add('alt+shift+down', m.moveDown.bind(m))
       shortcut.add('alt+shift+right', m.moveIn.bind(m))
@@ -482,9 +525,9 @@ void function() {
        *  shift jobb-bal-ra
        *  ctrl jobb-bal-ra
        *  ctrl-shift jobb-bal-ra
-       *  
-       *  
-       *  
+       *
+       *
+       *
       \*/
     },
     focusHeadElement: function() {

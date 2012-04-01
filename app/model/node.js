@@ -214,6 +214,36 @@ exports.newNode = function(parentId, aboveId, userId, cb) {
     })
   })
 }
+exports._s_newNode = function(parentId, newPosition, userId, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(parentId) != parentId)
+    return cb('ParentId must be a Number')
+
+  if (parseInt(newPosition) != newPosition)
+    return cb('newPosition must be a Number')
+
+  if (parseInt(userId) != userId)
+    return cb('UserId must be a Number')
+
+  var _self = this
+  _self.newNode._sql_createEmptyNode(function(err, info) {
+    log.info('----------', arguments)
+    console.log(';;;;;;;;;', arguments)
+    var newChildId = info.insertId
+    _self._sql_createHierarchy(parentId, newChildId, newPosition, function(err) {
+      if (err) {
+        log.error(err)
+        return cb('Database error')
+      } else {
+        return cb(null, newChildId, newPosition)
+      }
+    })
+  })
+}
 
 exports.newNode._sql_createEmptyNode = function(cb) {
   db.query('INSERT INTO tali_node(updated_at, created_at)'
