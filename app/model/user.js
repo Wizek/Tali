@@ -253,7 +253,7 @@ exports.isLoggedIn = function(envId, cb) {
  * after the connection is alive
  * @param envId {String}
  * @param newSocketId {String} The current (new) socketId
- * @param cb {function} cb(err, username, userid, onlineList)
+ * @param cb {function} cb(err, username, userId, onlineList)
  */
 exports.resume = function(envId, newSocketId, cb) {
   cb = cb || function() {}
@@ -279,7 +279,7 @@ exports.resume = function(envId, newSocketId, cb) {
   , focus: null
   , lock: null
   }
-  return cb(null, this._onlineStore)
+  return cb(null, username, userId, this._onlineStore)
 }
 
 /**

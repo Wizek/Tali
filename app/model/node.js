@@ -214,6 +214,36 @@ exports.newNode = function(parentId, aboveId, userId, cb) {
     })
   })
 }
+exports._s_newNode = function(parentId, newPosition, userId, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(parentId) != parentId)
+    return cb('ParentId must be a Number')
+
+  if (parseInt(newPosition) != newPosition)
+    return cb('newPosition must be a Number')
+
+  if (parseInt(userId) != userId)
+    return cb('UserId must be a Number')
+
+  var _self = this
+  _self.newNode._sql_createEmptyNode(function(err, info) {
+    log.info('----------', arguments)
+    console.log(';;;;;;;;;', arguments)
+    var newChildId = info.insertId
+    _self._sql_createHierarchy(parentId, newChildId, newPosition, function(err) {
+      if (err) {
+        log.error(err)
+        return cb('Database error')
+      } else {
+        return cb(null, newChildId, newPosition)
+      }
+    })
+  })
+}
 
 exports.newNode._sql_createEmptyNode = function(cb) {
   db.query('INSERT INTO tali_node(updated_at, created_at)'
@@ -285,8 +315,8 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
             console.log('nextPosition', nextPosition)
             console.log('abovePosition', abovePosition)
             console.log('interval', interval)
-            if (interval < 1) {
-              // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
+            if (interval < 10) {
+              log.error('// MUST REFRACTOR ALL POSITIONS IN THIS LEVEL', nodeIds, parentId, inverval)
             }
             var forCb = new helpers.asyncCbChecker(nodeIds.length, function(err) {
               if (err) {
@@ -320,8 +350,8 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
   this._getPosition(newParentId, aboveId, function(err, abovePosition) {
     self._getNextPosition(newParentId, abovePosition, function(err, nextPosition) {
       var interval = (nextPosition - abovePosition) / (nodes.length + 1)
-      if (interval < 1) {
-        // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
+      if (interval < 10) {
+        log.error('// MUST REFRACTOR ALL POSITIONS IN THIS LEVEL', nodeIds, parentId, inverval)
       }
       self.move._sql_updateParents(parentId, nodes, newParentId, function(err, info) {
         if (err) {
@@ -384,7 +414,7 @@ exports.move._sql_setPosition = function(parentId, childId, newPosition, cb) {
 }
 
 /**
- * Copy one or more nodes to an other position
+ * Copy one or more nodes to an other location
  * @param parentId {Number} Current parent of the copied nodes
  * @param nodes {Array} Array of node IDs
  * @param newParentId {Number} The new parent ID of the copied nodes

@@ -30,7 +30,7 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `tali`.`tali_node` ;
 
 CREATE  TABLE IF NOT EXISTS `tali`.`tali_node` (
-  `id` INT UNSIGNED NOT NULL ,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT ,
   `headline` VARCHAR(256) NOT NULL ,
   `body` TEXT NULL ,
   `updated_at` DATETIME NOT NULL ,
@@ -166,7 +166,6 @@ COMMIT;
 START TRANSACTION;
 USE `tali`;
 INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (1, 3, 0);
-INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (2, 3, 0);
 INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (1, 2, 4194304);
 INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (0, 1, 0);
 
