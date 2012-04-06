@@ -159,48 +159,56 @@ io.sockets.on('connection', function (socket) {
   }
 
   /**
-   * Makes a new node
+   * Create a new node after a given node
    * If the aboveId is 0 or null, then the new node will be the first in the list,
    * if the aboveId is the Id of the last node, then the new node will be the last node
-   * If the make is successful, it broadcasts a 'new node' event, with the
+   * If the creation is successful, it broadcasts a 'new node' event, with the
    * parentId, nodeId, nodePosition and the username
    * @param parentId {Number}
    * @param aboveId {Number} id of the node above the new node
    * @param cb {function} cb(err, nodeId, nodePosition)
    */
   afterAuth['new node'] = function(parentId, aboveId, cb) {
-    socket.get('userId', function(err, userId) {
-      socket.get('username', function(err, username) {
-        node.newNode(parentId, aboveId, userId, function(err, nodeId, nodePosition) {
-          socket.broadcast.emit('new node', parentId, nodeId, nodePosition, username)
-          return cb(err, nodeId, nodePosition)
-        })
-      })
-    })
-  }
-  // * shortcut
-  afterAuth['delete node refs by id'] = function(id, cb) {
     socket.get('username', function(err, username) {
-      var db = require('./db')
-      db.query('DELETE FROM `tali`.`tali_node_hierarchy` '
-        + 'WHERE `tali_node_hierarchy`.`parent_id`=? '
-        + 'OR    `tali_node_hierarchy`.`child_id`=? '
-        , [id, id] , cb
-      )
-    })
-  }
-  // * shortcut
-  afterAuth['new node by position'] = function(parentId, position, cb) {
-    socket.get('userId', function(err, userId) {
-      socket.get('username', function(err, username) {
-        node._s_newNode(parentId, position, userId, function(err, nodeId, nodePosition) {
-          socket.broadcast.emit('new node', parentId, nodeId, nodePosition, username)
-          return cb(err, nodeId, nodePosition)
-        })
+      node.newNode(parentId, aboveId, function(err, nodeId, nodePosition) {
+        socket.broadcast.emit('new node', parentId, nodeId, nodePosition, username)
+        return cb(err, nodeId, nodePosition)
       })
     })
   }
 
+  /**
+   * Create a new node with a given position
+   * If the creation is successful, it broadcasts a 'new node' event, with the
+   * parentId, nodeId, nodePosition and the username
+   * @param parentId {Number} Parent Id
+   * @param position {Number} Position of the new node
+   * @param cb {function} cb(err, nodeId)
+   */
+  afterAuth['new node by position'] = function(parentId, position, cb) {
+    socket.get('username', function(err, username) {
+      node.newNodeByPosition(parentId, position, function(err, nodeId) {
+        socket.broadcast.emit('new node', parentId, nodeId, position, username)
+        return cb(err, nodeId)
+      })
+    })
+  }
+
+  /**
+   * Delete node from hierarchy
+   * @param parentId {Number} Parent Id
+   * @param childId {Number} Child Id
+   * @param cb {function} cb(err)
+   */
+  afterAuth['delete node'] = function(parentId, childId, cb) {
+    socket.get('username', function(err, username) {
+      node.delete(parentId, childId, function(err) {
+        socket.broadcast.emit('delete node', parentId, nodeId, username)
+        return cb(err)
+      })
+    })
+  }
+  
   /**
    * Locks a node for editing
    * @param nodeId {Number}
