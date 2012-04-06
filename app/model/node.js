@@ -36,16 +36,18 @@ exports.getLevel = function(parentId, cb) {
 }
 
 exports.getLevel._sql_getLevel = function(parentId, cb) {
-  db.query('SELECT tali_node.*, hierarchy.parent_id,'
-        +' (SELECT count(child_id) FROM tali_node_hierarchy WHERE parent_id=tali_node.id) AS childnum'
-        +' FROM tali_node'
-        +' LEFT JOIN tali_node_hierarchy hierarchy ON hierarchy.child_id=tali_node.id'
-        +' WHERE hierarchy.parent_id=?'
-        +' ORDER BY hierarchy.position'
+  db.query(''
+    +' SELECT `tali_node`.*, `hierarchy`.`parent_id`, `hierarchy`.`position`, '
+    +'   ( '
+    +'     SELECT count(child_id) '
+    +'     FROM tali_node_hierarchy'
+    +'     WHERE parent_id=tali_node.id'
+    +'   ) AS childnum'
+    +' FROM tali_node'
+    +' LEFT JOIN tali_node_hierarchy hierarchy ON hierarchy.child_id=tali_node.id'
+    +' WHERE hierarchy.parent_id=?'
   , [parentId]
-  , function(err, results) {
-      return cb(err, results)
-    }
+  , cb
   )
 }
 
@@ -211,6 +213,36 @@ exports.newNode = function(parentId, aboveId, userId, cb) {
           }
         })
       })
+    })
+  })
+}
+exports._s_newNode = function(parentId, newPosition, userId, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(parentId) != parentId)
+    return cb('ParentId must be a Number')
+
+  if (parseInt(newPosition) != newPosition)
+    return cb('newPosition must be a Number')
+
+  if (parseInt(userId) != userId)
+    return cb('UserId must be a Number')
+
+  var _self = this
+  _self.newNode._sql_createEmptyNode(function(err, info) {
+    log.info('----------', arguments)
+    console.log(';;;;;;;;;', arguments)
+    var newChildId = info.insertId
+    _self._sql_createHierarchy(parentId, newChildId, newPosition, function(err) {
+      if (err) {
+        log.error(err)
+        return cb('Database error')
+      } else {
+        return cb(null, newChildId, newPosition)
+      }
     })
   })
 }
