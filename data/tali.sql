@@ -16,7 +16,7 @@ CREATE  TABLE IF NOT EXISTS `tali`.`tali_user` (
   `username` VARCHAR(32) NULL ,
   `email` VARCHAR(64) NULL ,
   `password_type` VARCHAR(4) NOT NULL ,
-  `password` CHAR(64) NULL ,
+  `password` VARCHAR(40) NULL ,
   `updated_at` DATETIME NULL ,
   `created_at` DATETIME NOT NULL ,
   `session_id` VARCHAR(68) NULL ,
@@ -48,18 +48,18 @@ CREATE  TABLE IF NOT EXISTS `tali`.`tali_node_hierarchy` (
   `parent_id` INT UNSIGNED NOT NULL ,
   `child_id` INT UNSIGNED NOT NULL ,
   `position` INT UNSIGNED NOT NULL ,
-  INDEX `fk_tali_node_hiererchyt_1` (`child_id` ASC) ,
-  INDEX `fk_tali_node_hiererchy_2` (`parent_id` ASC) ,
-  CONSTRAINT `fk_tali_node_hiererchyt_1`
-    FOREIGN KEY (`child_id` )
-    REFERENCES `tali`.`tali_node` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_tali_node_hiererchy_2`
+  INDEX `fk_tali_node_hierarchy_parent` (`parent_id` ASC) ,
+  INDEX `fk_tali_node_hierarchy_child` (`child_id` ASC) ,
+  CONSTRAINT `fk_tali_node_hierarchy_parent`
     FOREIGN KEY (`parent_id` )
     REFERENCES `tali`.`tali_node` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_tali_node_hierarchy_child`
+    FOREIGN KEY (`child_id` )
+    REFERENCES `tali`.`tali_node` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
@@ -84,7 +84,7 @@ CREATE  TABLE IF NOT EXISTS `tali`.`tali_node_update` (
   CONSTRAINT `fk_tali_node_update_2`
     FOREIGN KEY (`user_id` )
     REFERENCES `tali`.`tali_user` (`id` )
-    ON DELETE SET NULL
+    ON DELETE NO ACTION
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
@@ -112,20 +112,20 @@ CREATE  TABLE IF NOT EXISTS `tali`.`tali_node_tag` (
   `creator_id` INT UNSIGNED NOT NULL ,
   `updated_at` DATETIME NOT NULL ,
   `created_at` DATETIME NOT NULL ,
-  INDEX `fk_tali_node_tag_1` (`node_id` ASC) ,
-  INDEX `fk_tali_node_tag_2` (`tag_id` ASC) ,
-  INDEX `fk_tali_node_tag_3` (`creator_id` ASC) ,
-  CONSTRAINT `fk_tali_node_tag_1`
+  INDEX `fk_tali_node_tag_node` (`node_id` ASC) ,
+  INDEX `fk_tali_node_tag_tag` (`tag_id` ASC) ,
+  INDEX `fk_tali_node_tag_user` (`creator_id` ASC) ,
+  CONSTRAINT `fk_tali_node_tag_node`
     FOREIGN KEY (`node_id` )
     REFERENCES `tali`.`tali_node` (`id` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_tali_node_tag_2`
+  CONSTRAINT `fk_tali_node_tag_tag`
     FOREIGN KEY (`tag_id` )
     REFERENCES `tali`.`tali_tag` (`id` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_tali_node_tag_3`
+  CONSTRAINT `fk_tali_node_tag_user`
     FOREIGN KEY (`creator_id` )
     REFERENCES `tali`.`tali_user` (`id` )
     ON DELETE NO ACTION
@@ -151,13 +151,12 @@ COMMIT;
 -- -----------------------------------------------------
 -- Data for table `tali`.`tali_node`
 -- -----------------------------------------------------
-SET SESSION SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 START TRANSACTION;
 USE `tali`;
+INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (1, '#1 - First level test node', '1', now(), now());
+INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (2, '#2 - Child of 1', '2', now(), now());
+INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (3, '#3 - Child of 1 and 2', '3', now(), now());
 INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (0, 'GLOBAL - invisible', NULL, now(), now());
-INSERT INTO `tali`.`tali_node` (`headline`, `body`, `updated_at`, `created_at`) VALUES ('#1 - First level test node', '1', now(), now());
-INSERT INTO `tali`.`tali_node` (`headline`, `body`, `updated_at`, `created_at`) VALUES ('#2 - Child of 1', '2', now(), now());
-INSERT INTO `tali`.`tali_node` (`headline`, `body`, `updated_at`, `created_at`) VALUES ('#3 - Child of 1 and 2', '3', now(), now());
 
 COMMIT;
 

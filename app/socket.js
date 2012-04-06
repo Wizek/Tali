@@ -70,7 +70,9 @@ io.sockets.on('connection', function (socket) {
             }
             user.resume(envId, socket.id, function(err, username, userId, onlineList, prevSocketId) {
               if (prevSocketId) {
-                socket.namespace.sockets[prevSocketId].disconnect()
+                if (socket.namespace.sockets[prevSocketId]) {
+                  socket.namespace.sockets[prevSocketId].disconnect()
+                }
               }
               socket.set('username', username)
               socket.set('userId', userId)
