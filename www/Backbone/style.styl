@@ -1,0 +1,63 @@
+//@import normalize
+.tali-top
+  /*\
+   *  Background of the whole app
+  \*/
+  background-color #EEE
+  width 100%
+  height 100%
+  position absolute
+  top 0
+  #notifications
+    position fixed
+    right 0
+    .notification
+      padding 1px
+      background-color #FFF
+      border 2px solid #BBB
+      border-radius 4px
+      margin 2px
+      // Make these boxes variable in width
+  & > ul
+    padding 0
+    margin 15px
+  ul
+    ul
+      margin 1px initial
+    li
+      margin 3px initial
+      list-style-type none
+      .handle
+        display none
+        &.plus
+          //
+        &.minus
+          //
+        &.dot
+          //
+      .headline
+        border none
+        width 600px
+        height 1.7em
+        background-color inherit
+        padding 4px
+        resize none
+        border-radius 5px
+        &:focus
+          outline none
+          -webkit-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1),
+          0 0 8px rgba(255, 255, 255, 1);
+        //
+      .focusedby
+        //display inline-block
+        height 100%
+        vertical-align middle
+        margin auto initial
+        //display inline-block
+      .body
+        display none
+      &.focused
+        &.ours > .headline
+          background #DDD
+        &.theirs > .headline
+          //background pink
