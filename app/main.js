@@ -30,25 +30,28 @@ var log = require('./log')
 // PORT = PORT_OVERRIDE || PORT
 app.listen(PORT, function() {
   var color = hlpr.color
-  var ver =  '(' + color('v'+VERSION,36) + ')'
+  var ver =  color('v'+VERSION,36)
     , port = color(PORT,36)
     , env = process.env.NODE_ENV && process.env.NODE_ENV == app.set('env') ?
-            'been set to '+color(app.set('env'),36)
-          : 'defaulted to '+color(app.set('env'),36)+' (see --help)'
+            'set '+color(app.set('env'),36)
+          : 'defaulted to '+color(app.set('env'),36)
     , now =  color(new Date().format(),36)
     , init = color((new Date()-STARTUPTIME)+'ms',36)
-               
+
     , welcome =
-        color('',36)+' ● Welcome to '+APPNAME+'! '+ver
-        + '\n ● Main server is up and longing for connections on port '+port
-        + '\n ● Enviroment has '+env
-        + '\n ● Initialization finished on '+now+', took '+init
+      [ 'Welcome to '+APPNAME+' '+ver
+      , 'Server up on port '+port
+      , 'Env '+env
+      , 'Init took '+init
+      ]
 
   db.enhancedConnect({
     success: function() {
-      console.log()
+      console.log('')
       process.title = APPNAME+' (v'+VERSION+')'
-      log.info(welcome)
+      for (var i = 0; i < welcome.length; i++) {
+        log.info(welcome[i])
+      }
       console.log('   ―――――――――――――――――――――――――――――――――――――'
         + '―――――――――――――――――――――――――――――――――――――  \n')
     }

@@ -174,6 +174,17 @@ io.sockets.on('connection', function (socket) {
     })
   }
   // * shortcut
+  afterAuth['delete node refs by id'] = function(id, cb) {
+    socket.get('username', function(err, username) {
+      var db = require('./db')
+      db.query('DELETE FROM `tali`.`tali_node_hierarchy` '
+        + 'WHERE `tali_node_hierarchy`.`parent_id`=? '
+        + 'OR    `tali_node_hierarchy`.`child_id`=? '
+        , [id, id] , cb
+      )
+    })
+  }
+  // * shortcut
   afterAuth['new node by position'] = function(parentId, position, cb) {
     socket.get('userId', function(err, userId) {
       socket.get('username', function(err, username) {

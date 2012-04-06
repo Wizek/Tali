@@ -51,7 +51,9 @@ void function() {
           for (var i in results) {
             var n = new Node(results[i])
             // n.isNew = false
-            self.appendChild(n)
+            // n.set
+            self.get('children').add(n)
+            // self.add(n)
           }
         })
         topLevel.cache[this.get('id')] = this
@@ -349,7 +351,7 @@ void function() {
                       focus.at(n)
                     }
                     // n.isNew = false
-                    topLevel.append(n)
+                    topLevel.add(n)
                   }
                   //console.log('bóó', arguments)
                 })
@@ -424,20 +426,15 @@ void function() {
       var n = new Node
       t().after(n)
       var parentId = t().collection.parent? t().collection.parent.get('id') :0
-      // debugger
-      //if (t().isNew) {
-        console.log('emitting new node by position'
-          , parentId, n.get('position'))
-        socket.emit('new node by position', parentId
-            , n.get('position'), function(err, nodeId, nodePosition) {
-          console.log('new node by position cb', arguments)
-          n.set('id', nodeId)
-          // if (!err) {
-          //   n.isNew = false
-          // }
-          t(n)
-        })
-      //}
+      socket.emit('new node by position', parentId
+        , n.get('position'), function(err, nodeId, nodePosition) {
+        console.log('new node by position cb', arguments)
+        n.set('id', nodeId)
+        // if (!err) {
+        //   n.isNew = false
+        // }
+        t(n)
+      })
     },
     deleteNodeAndFocusPrevious: function() {
       var t = this.at()
@@ -497,14 +494,18 @@ void function() {
       shortcut.add('enter', m.addNodeAfterAndFocusIt.bind(m))
 
       shortcut.add('backspace', function() {
-        console.log('Duty calls!', arguments)
+        // console.log('Duty calls!', arguments)
         var _ref
         _ref = m.at().view.$el.find('> .headline').get(0)
         console.log()
         // If the cursore is at the beginning
         if (_ref.selectionStart == 0 && _ref.selectionEnd == 0) {
+          socket.emit('delete node refs by id', m.at().get('id'), function() {
+            console.log('delete node refs by id cb', arguments)
+          })
           var at = m.deleteNodeAndFocusPrevious.apply(m)
           m.at().view.$el.find('> .headline').get(0).setSelectionRange(at, at)
+          return false // !!!! Precent cascade!
         }
       }, {
         propagate: true
@@ -525,9 +526,7 @@ void function() {
        *  shift jobb-bal-ra
        *  ctrl jobb-bal-ra
        *  ctrl-shift jobb-bal-ra
-       *
-       *
-       *
+       *  ...
       \*/
     },
     focusHeadElement: function() {

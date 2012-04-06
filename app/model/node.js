@@ -36,16 +36,18 @@ exports.getLevel = function(parentId, cb) {
 }
 
 exports.getLevel._sql_getLevel = function(parentId, cb) {
-  db.query('SELECT tali_node.*, hierarchy.parent_id,'
-        +' (SELECT count(child_id) FROM tali_node_hierarchy WHERE parent_id=tali_node.id) AS childnum'
-        +' FROM tali_node'
-        +' LEFT JOIN tali_node_hierarchy hierarchy ON hierarchy.child_id=tali_node.id'
-        +' WHERE hierarchy.parent_id=?'
-        +' ORDER BY hierarchy.position'
+  db.query(''
+    +' SELECT `tali_node`.*, `hierarchy`.`parent_id`, `hierarchy`.`position`, '
+    +'   ( '
+    +'     SELECT count(child_id) '
+    +'     FROM tali_node_hierarchy'
+    +'     WHERE parent_id=tali_node.id'
+    +'   ) AS childnum'
+    +' FROM tali_node'
+    +' LEFT JOIN tali_node_hierarchy hierarchy ON hierarchy.child_id=tali_node.id'
+    +' WHERE hierarchy.parent_id=?'
   , [parentId]
-  , function(err, results) {
-      return cb(err, results)
-    }
+  , cb
   )
 }
 
