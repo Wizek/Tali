@@ -1,0 +1,74 @@
+/*\
+ *  Parameters
+\*/
+
+MAIN_PADDING = 20px
+MAINTREE_INDENT = 20px
+
+MAX_LINE_WIDTH = 600px
+NODE_LINE_PADDING = 3px
+TEXT_FONT_FACE = "Trebuchet MS"
+TEXT_FONT_SIZE = 11pt
+
+HANDLE_COLOR = hsl(0, 0%, 40%)
+HANDLE_EMPTY_COLOR = lighten(HANDLE_COLOR, 60%)
+
+HANDLE_EMPTY_SIGN = "∙"
+HANDLE_OPENED_SIGN = "-"
+HANDLE_CLOSED_SIGN = "+"
+HANDLE_SIGN_RIGHT_PADDING = 10px
+
+SELECTION_BORDER_WIDTH = 2px
+
+
+/*\
+ *  Actual styling
+\*/
+
+body
+  margin 0
+
+#mainContentContainer
+  background #DDD
+  padding MAIN_PADDING
+
+  ul#mainTree
+    padding-left MAINTREE_INDENT
+  
+.entry_container
+  display block
+  // max-width MAX_LINE_WIDTH
+  //border 1px gray solid
+
+  .h_b_wrapper
+    max-width MAX_LINE_WIDTH
+    padding NODE_LINE_PADDING 2px //SELECTION_BORDER_WIDTH
+    font TEXT_FONT_SIZE TEXT_FONT_FACE
+    // font-family TEXT_FONT_FACE
+    // font-size TEXT_FONT_SIZE
+    .headline
+      padding 2px
+      //margin-left -.2em
+      &:before
+        // content "+"
+        font 12pt 'Consolas'
+        color HANDLE_COLOR
+        font-weight 900
+        padding-right HANDLE_SIGN_RIGHT_PADDING
+        margin-left -21px
+    .body
+      color green
+
+  &.open > .h_b_wrapper > .headline:before
+    content HANDLE_OPENED_SIGN
+  &.closed > .h_b_wrapper > .headline:before
+    content HANDLE_CLOSED_SIGN
+  &.empty > .h_b_wrapper > .headline:before
+    color HANDLE_EMPTY_COLOR
+    content HANDLE_EMPTY_SIGN
+
+  &.focused > .h_b_wrapper
+    background white
+    border-radius 5px
+    border SELECTION_BORDER_WIDTH solid #CCC
+    margin -(SELECTION_BORDER_WIDTH)
