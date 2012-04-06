@@ -47,7 +47,7 @@ DROP TABLE IF EXISTS `tali`.`tali_node_hierarchy` ;
 CREATE  TABLE IF NOT EXISTS `tali`.`tali_node_hierarchy` (
   `parent_id` INT UNSIGNED NOT NULL ,
   `child_id` INT UNSIGNED NOT NULL ,
-  `position` MEDIUMINT NOT NULL ,
+  `position` INT UNSIGNED NOT NULL ,
   INDEX `fk_tali_node_hiererchyt_1` (`child_id` ASC) ,
   INDEX `fk_tali_node_hiererchy_2` (`parent_id` ASC) ,
   CONSTRAINT `fk_tali_node_hiererchyt_1`
@@ -151,12 +151,13 @@ COMMIT;
 -- -----------------------------------------------------
 -- Data for table `tali`.`tali_node`
 -- -----------------------------------------------------
+SET SESSION SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 START TRANSACTION;
 USE `tali`;
-INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (1, '#1 - First level test node', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas sit amet tincidunt elit. Morbi diam dui, elementum quis cursus quis, molestie at odio. Sed eros tellus, consequat scelerisque adipiscing vel, vestibulum tincidunt felis. Sed sit amet erat eget diam imperdiet posuere. Proin et nibh mi. Pellentesque viverra posuere commodo. Vivamus placerat mi magna. Cras aliquet dignissim tempor. Curabitur aliquet interdum eros, eget fringilla mauris iaculis et. Aenean interdum diam ut eros gravida tristique. Aliquam orci libero, tempor quis volutpat et, pharetra adipiscing enim. Vivamus a mauris mauris, vel ultrices nibh. Donec accumsan sodales nunc. Aliquam sed ante sit amet lorem aliquet vulputate accumsan in ante. Curabitur vitae dolor et orci pulvinar tristique. Vivamus vulputate eleifend orci nec mattis. Donec convallis pharetra risus at iaculis. Mauris id libero vel lacus suscipit lacinia. ', now(), now());
-INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (2, '#2 - Child of 1', 'Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Praesent eleifend viverra ligula, eu laoreet nisl convallis tristique. Fusce varius leo eget mi rutrum id adipiscing felis malesuada. Cras sit amet massa id libero ultricies pretium. Nam pretium ipsum vel odio venenatis sit amet viverra mi cursus. Nullam id mi sed lorem accumsan aliquam. Nam ligula magna, hendrerit sed dictum sed, egestas vitae lectus. Pellentesque sit amet tellus lorem. Quisque luctus consequat enim sed euismod. Nullam pellentesque ornare lacus vitae pulvinar. Integer ullamcorper accumsan arcu a ultricies. Sed rhoncus egestas quam, id rhoncus sapien aliquet vel. Nullam semper consequat diam, a ultricies sem cursus id. Donec purus arcu, euismod quis fringilla eget, hendrerit at elit. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. ', now(), now());
-INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (3, '#3 - Child of 1 and 2', 'Sed quis quam vitae ligula venenatis viverra vitae vitae metus. Etiam dolor ipsum, scelerisque sit amet mollis vel, laoreet sed velit. Vestibulum ut sapien ut sapien facilisis lacinia. Nunc sed neque at dui scelerisque consequat ac vitae mi. Aliquam sit amet ullamcorper dolor. Integer nibh erat, cursus ut ullamcorper sed, cursus ac metus. Pellentesque suscipit suscipit eleifend. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Duis at sem sed massa posuere consequat. Sed sed neque eu lorem dignissim ullamcorper et vitae felis. Nullam convallis posuere porta. Morbi convallis semper nibh sed auctor. Maecenas vel vestibulum ipsum. Fusce elit metus, ultricies vitae posuere et, consectetur ac sapien. Pellentesque convallis, justo sed lacinia porttitor, dui velit accumsan libero, vel ornare dui tortor vitae lectus. In hac habitasse platea dictumst. Ut luctus mi sit amet ligula aliquam euismod malesuada est tristique. Phasellus quis erat nisl, et elementum ligula. Suspendisse ante augue, ullamcorper eget sollicitudin at, vulputate non lacus. Donec tempus magna ac dolor fermentum luctus. ', now(), now());
 INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (0, 'GLOBAL - invisible', NULL, now(), now());
+INSERT INTO `tali`.`tali_node` (`headline`, `body`, `updated_at`, `created_at`) VALUES ('#1 - First level test node', '1', now(), now());
+INSERT INTO `tali`.`tali_node` (`headline`, `body`, `updated_at`, `created_at`) VALUES ('#2 - Child of 1', '2', now(), now());
+INSERT INTO `tali`.`tali_node` (`headline`, `body`, `updated_at`, `created_at`) VALUES ('#3 - Child of 1 and 2', '3', now(), now());
 
 COMMIT;
 
