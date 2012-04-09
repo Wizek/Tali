@@ -33,6 +33,13 @@
   list-style-type: none;
 }
 .tali-top ul li .handle {
+  font-family: monospace;
+  font-size: 200%;
+  opacity: 0.2;
+  text-shadow: 0 0 8px #000;
+  margin-right: 3px;
+}
+.tali-top ul li .handle:not(.dot) {
   display: none;
 }
 .tali-top ul li .headline {

@@ -30,12 +30,19 @@
       margin 3px initial
       list-style-type none
       .handle
-        display none
+        font-family monospace
+        font-size 200%
+        opacity: 0.2
+        text-shadow: 0 0 8px rgba(0,0,0,1);
+        margin-right 3px
+        &:not(.dot)
+          display none // temporal
         &.plus
           //
         &.minus
           //
         &.dot
+          //padding 6px
           //
       .headline
         border none
