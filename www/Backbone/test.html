@@ -7,6 +7,16 @@
 <script type="text/javascript" src="tree.js"></script>
 <script type="text/javascript" src="main4.js"></script>
 <script type="text/javascript">
+// TODO: cleaner
+var socket = {
+  emit: function(_, cb) {
+    for (var i = 0; i < arguments.length; i++) {
+      if (typeof arguments == "function") {
+        arguments[i]()
+      }
+    }
+  }
+}
 // tree.heritable.cfg('parallel',true)
 tree.branch('I12n', function(tree) {
   tree(Backbone).type('object')
@@ -87,8 +97,8 @@ tree.branch('Node Model', function(tree) {
     var node = new Node()
     tree(node.get('headline')).type('string')
     tree(node.get('body')).type('string')
-    tree(node.get('createdAt') instanceof Date).ok()
-    tree(node.get('updatedAt') instanceof Date).ok()
+    tree(node.get('created_at') instanceof Date).ok()
+    tree(node.get('updated_at') instanceof Date).ok()
     tree(node.get('position')).is(iAvg(MIN_POS,MAX_POS))
     tree(node.get('children') instanceof Children).ok()
     tree(node.get('children').parent).is(node)
@@ -113,9 +123,9 @@ tree.branch('Node Model', function(tree) {
     var n = new Node()
     var ch = new Children()
     ch.add(n)
-    tree(ch.size()).is(1) 
-    tree(n.prevPos).type('function') 
-    tree(n.nextPos).type('function') 
+    tree(ch.size()).is(1)
+    tree(n.prevPos).type('function')
+    tree(n.nextPos).type('function')
     tree(n.prevPos()).is(MIN_POS)
     tree(n.nextPos()).is(MAX_POS)
     ch.add(new Node({position:123}))
@@ -279,7 +289,7 @@ tree.branch('Node Model', function(tree) {
     ch.append(n2)
     tree(ch.size()).is(2)
     tree(n1.get('children').size()).is(0)
-    
+
     n2.moveIn()
     tree(ch.size()).is(1)
     tree(n1.get('children').size()).is(1)
@@ -307,7 +317,7 @@ tree.branch('Node Model', function(tree) {
     tree(ch.size()).is(2)
     tree(n1.get('children').size()).is(1)
     tree(n2.get('position')).is(iAvg(MIN_POS,MAX_POS))
-    
+
     n2.moveOut()
     tree(ch.size()).is(3)
     tree(n1.get('children').size()).is(0)
@@ -356,20 +366,20 @@ tree.branch('Node Model', function(tree) {
     tree(ch.size()).is(0)
     tree.done(4)
   })
-  tree.branch('updatedAt', function(tree) {
+  tree.branch('//updated_at', function(tree) {
     var n1 = new Node
     var n2 = new Node
     var n3 = new Node
-    var b1 = n1.get('updatedAt')
-    var b2 = n2.get('updatedAt')
-    var b3 = n3.get('updatedAt')
+    var b1 = n1.get('updated_at')
+    var b2 = n2.get('updated_at')
+    var b3 = n3.get('updated_at')
     setTimeout(function() {
       n1.set({body:'filler'})
       n2.set({headline:'filler'})
       n3.set({position:'filler'})
-      var a1 = n1.get('updatedAt')
-      var a2 = n2.get('updatedAt')
-      var a3 = n3.get('updatedAt')
+      var a1 = n1.get('updated_at')
+      var a2 = n2.get('updated_at')
+      var a3 = n3.get('updated_at')
       tree(b1.valueOf() < a1.valueOf()).ok()
       tree(b2.valueOf() < a2.valueOf()).ok()
       tree(b3.valueOf() < a3.valueOf()).ok()
@@ -379,7 +389,7 @@ tree.branch('Node Model', function(tree) {
   tree.done(0)
 })
 tree.branch('Views', function(tree) {
-  tree.branch('Interface', function(tree) {
+  tree.branch('//Interface', function(tree) {
     tree(Interface).type('function')
     var i = new Interface
     tree($(i.el).is('div.tali-top')).ok()
@@ -588,7 +598,7 @@ tree.branch('Views', function(tree) {
       tree(n1.get('focus')).is(null)
       tree(n2.get('focus')).is(f)
 
-      f.at(new Node)      
+      f.at(new Node)
       tree(n1.get('focus')).is(null)
       tree(n2.get('focus')).is(null)
       tree(f.get('at')).is(f.at())
