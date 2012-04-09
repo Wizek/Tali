@@ -153,10 +153,10 @@ COMMIT;
 -- -----------------------------------------------------
 START TRANSACTION;
 USE `tali`;
-INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (1, '#1 - First level test node', '1', now(), now());
-INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (2, '#2 - Child of 1', '2', now(), now());
-INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (3, '#3 - Child of 1 and 2', '3', now(), now());
-INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (0, 'GLOBAL - invisible', NULL, now(), now());
+INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (2, '#1 - First level test node', '1', now(), now());
+INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (3, '#2 - Child of 1', '2', now(), now());
+INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (4, '#3 - Child of 1 and 2', '3', now(), now());
+INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (1, 'GLOBAL - invisible', NULL, now(), now());
 
 COMMIT;
 
@@ -165,9 +165,9 @@ COMMIT;
 -- -----------------------------------------------------
 START TRANSACTION;
 USE `tali`;
-INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (1, 3, 0);
-INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (1, 2, 4194304);
-INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (0, 1, 0);
+INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (2, 4, 2147483648);
+INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (2, 3, 3221225472);
+INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (1, 2, 2147483648);
 
 COMMIT;
 
