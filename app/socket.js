@@ -208,6 +208,23 @@ io.sockets.on('connection', function (socket) {
       })
     })
   }
+
+  /**
+   * Moving one nodes whole tree to other level with given new position
+   * @param parentId {Number} Parent ID
+   * @param childId {Number} Child ID
+   * @param newParentId {Number} New parent ID
+   * @param newPosition {Number} New position
+   * @param cb {function} cb(err)
+   */
+  afterAuth['move whole tree'] = function(parentId, childId, newParentId, newPosition, cb) {
+    socket.get('username', function(err, username)) {
+      node.moveWholeTree(parentId, childId, newParentId, newPosition, function(err) {
+        socket.broadcast.emit('move whole tree', parentId, childId, newParentId, newPosition, username)
+        return cb(err)
+      })
+    }
+  }
   
   /**
    * Locks a node for editing
