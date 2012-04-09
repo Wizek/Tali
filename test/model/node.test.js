@@ -459,6 +459,36 @@ exports['Moving node(s) atomic to an upper level'] = function(test) {
   })
 }
 
+exports['Moving one nodes whole tree to other level with given new position'] = function(test) {
+  test.expect(7)
+
+  test.equal(typeof node.moveWholeTree, 'function')
+  test.doesNotThrow(function() {
+    node.moveWholeTree(null, 2, 3, 122222, function(err) {
+      test.equal(err, 'ParentId must be a Number')
+    })
+    node.moveWholeTree(1, null, 3, 122222, function(err) {
+      test.equal(err, 'ChildId must be a Number')
+    })
+    node.moveWholeTree(1, 2, null, 122222, function(err) {
+      test.equal(err, 'NewParentId must be a Number')
+    })
+    node.moveWholeTree(1, 2, 3, null, function(err) {
+      test.equal(err, 'NewPosition must be a Number')
+    })
+  })
+
+  node.moveWholeTree._sql_updateHierarchy = function(parentId, childId, newParentId, newPosition, cb) {
+    return cb(null, {affectedRows: 1})
+  }
+
+  node.moveWholeTree(1, 2, 1, 122222, function(err) {
+    test.equal(err, null)
+  })
+
+  test.done()
+}
+
 exports['Node copiing'] = function(test) {
   test.expect(11)
 
