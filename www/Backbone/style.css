@@ -22,6 +22,9 @@
   padding: 0;
   margin: 15px;
 }
+.tali-top ul.hidden {
+  display: none;
+}
 .tali-top ul ul {
   margin: 1px initial;
 }
