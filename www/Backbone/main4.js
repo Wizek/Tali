@@ -61,6 +61,7 @@ void function() {
       this.view = new NodeView({model:this})
       this.set({children:new Children(null, {parent:this})})
       this.bind('change:body', updateUpdatedAt)
+      this.bind('change:position', this.changedPosition)
       this.bind('change:headline', function() {
         socket.emit('edit headline of node', this.get('headline'), this.get('id'), function() {
           console.log('edit headline of node cb', arguments)
@@ -72,6 +73,9 @@ void function() {
       function updateUpdatedAt (self) {
         self.set({'updated_at':new Date()})
       }
+    }
+    , changedPosition: function() {
+      console.log('change:position', this.get('position'), this)
     }
     , prevPos: function() {
       var pos = this.get('position')
@@ -156,7 +160,6 @@ void function() {
       return this.get('children').size()
     }
     , collapse: function() {
-      console.log(this)
       this.set({expanded:false})
     }
     , expand: function() {
@@ -179,9 +182,13 @@ void function() {
       }) || null
     }
     , append: function(node) {
+      console.log("this.size()", this.size())
       if (this.size()) {
         var last = this.max(function(v) {return v.get('position')}).get('position')
+        console.log("SETTING")
         node.set({position:iAvg(last, MAX_POS)})
+      } else {
+        node.set({position:iAvg(MIN_POS, MAX_POS)})
       }
       this.add(node)
     }
@@ -317,13 +324,13 @@ void function() {
             } else {
               if (isLoggedIn) {
                 console.log('már be voltam lépve')
-              var notify = function(message) {
-                var el = $('<div class="notification">').text(message)
+                var notify = function(message) {
+                  var el = $('<div class="notification">').text(message)
                   el.prependTo('#notifications')
                   setTimeout(function() {
                     el.remove()
-                }, 5000)
-              }
+                  }, 5000)
+                }
               socket.on('user joined', function(username, userId) {
                 notify(username + ' csatlakozott.')
               })
@@ -345,7 +352,7 @@ void function() {
               socket.on('disconnect', function() {
                 notify('Szétkapcsoltál')
                 })
-                socket.emit('get children of', 0, function(err, results) {
+                socket.emit('get children of', 1, function(err, results) {
                   console.log('get children of cb')
                   for (var i in results) {
                     var n = new Node(results[i])
@@ -427,7 +434,7 @@ void function() {
       var t = this.at
       var n = new Node
       t().after(n)
-      var parentId = t().collection.parent? t().collection.parent.get('id') :0
+      var parentId = t().collection.parent? t().collection.parent.get('id') : 1
       socket.emit('new node by position', parentId
         , n.get('position'), function(err, nodeId, nodePosition) {
         console.log('new node by position cb', arguments)
@@ -450,6 +457,14 @@ void function() {
     deleteNodeAndFocusNext: function() {},
     expandCurrentLevel: function() {
       this.at().expand()
+    },
+    toggleCurrentLevel: function() {
+      var t = this.at()
+      if (t.get('expanded')) {
+        t.collapse()
+      } else {
+        t.expand()
+      }
     },
     collapseCurrentLevel: function() {
       this.at().collapse()
@@ -514,8 +529,9 @@ void function() {
       })
 
       // shortcut.add('delete', m.deleteNodeAndFocusNext.bind(m))
-      shortcut.add('alt+l', m.expandCurrentLevel.bind(m))
-      shortcut.add('alt+h', m.collapseCurrentLevel.bind(m))
+      shortcut.add('ctrl+y', m.expandCurrentLevel.bind(m))
+      shortcut.add('ctrl+x', m.collapseCurrentLevel.bind(m))
+      shortcut.add('ctrl+space', m.toggleCurrentLevel.bind(m))
       shortcut.add('alt+shift+up', m.moveUp.bind(m))
       shortcut.add('alt+shift+down', m.moveDown.bind(m))
       shortcut.add('alt+shift+right', m.moveIn.bind(m))
