@@ -10,7 +10,7 @@
 // Global variable declaration
 // Globális változó deklaráció
 STARTUPTIME = new Date().valueOf()
-VERSION = '0.0.6'
+VERSION = '0.1.0'
 APPNAME = 'Codename Tali'
 
 // Add directories to path
