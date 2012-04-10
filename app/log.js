@@ -1,7 +1,7 @@
 var fs = require('fs')
   , Spruce = require('spruce')
-  , settings = require('settings')
-  require('helpers')
+  , settings = require('./settings')
+  require('./helpers')
 
 /*\
  *  Set up logging

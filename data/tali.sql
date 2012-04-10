@@ -16,7 +16,7 @@ CREATE  TABLE IF NOT EXISTS `tali`.`tali_user` (
   `username` VARCHAR(32) NULL ,
   `email` VARCHAR(64) NULL ,
   `password_type` VARCHAR(4) NOT NULL ,
-  `password` CHAR(64) NULL ,
+  `password` VARCHAR(40) NULL ,
   `updated_at` DATETIME NULL ,
   `created_at` DATETIME NOT NULL ,
   `session_id` VARCHAR(68) NULL ,
@@ -30,7 +30,7 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `tali`.`tali_node` ;
 
 CREATE  TABLE IF NOT EXISTS `tali`.`tali_node` (
-  `id` INT UNSIGNED NOT NULL ,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT ,
   `headline` VARCHAR(256) NOT NULL ,
   `body` TEXT NULL ,
   `updated_at` DATETIME NOT NULL ,
@@ -47,19 +47,19 @@ DROP TABLE IF EXISTS `tali`.`tali_node_hierarchy` ;
 CREATE  TABLE IF NOT EXISTS `tali`.`tali_node_hierarchy` (
   `parent_id` INT UNSIGNED NOT NULL ,
   `child_id` INT UNSIGNED NOT NULL ,
-  `position` MEDIUMINT NOT NULL ,
-  INDEX `fk_tali_node_hiererchyt_1` (`child_id` ASC) ,
-  INDEX `fk_tali_node_hiererchy_2` (`parent_id` ASC) ,
-  CONSTRAINT `fk_tali_node_hiererchyt_1`
-    FOREIGN KEY (`child_id` )
-    REFERENCES `tali`.`tali_node` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_tali_node_hiererchy_2`
+  `position` INT UNSIGNED NOT NULL ,
+  INDEX `fk_tali_node_hierarchy_parent` (`parent_id` ASC) ,
+  INDEX `fk_tali_node_hierarchy_child` (`child_id` ASC) ,
+  CONSTRAINT `fk_tali_node_hierarchy_parent`
     FOREIGN KEY (`parent_id` )
     REFERENCES `tali`.`tali_node` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_tali_node_hierarchy_child`
+    FOREIGN KEY (`child_id` )
+    REFERENCES `tali`.`tali_node` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
@@ -84,7 +84,7 @@ CREATE  TABLE IF NOT EXISTS `tali`.`tali_node_update` (
   CONSTRAINT `fk_tali_node_update_2`
     FOREIGN KEY (`user_id` )
     REFERENCES `tali`.`tali_user` (`id` )
-    ON DELETE SET NULL
+    ON DELETE NO ACTION
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
@@ -112,20 +112,20 @@ CREATE  TABLE IF NOT EXISTS `tali`.`tali_node_tag` (
   `creator_id` INT UNSIGNED NOT NULL ,
   `updated_at` DATETIME NOT NULL ,
   `created_at` DATETIME NOT NULL ,
-  INDEX `fk_tali_node_tag_1` (`node_id` ASC) ,
-  INDEX `fk_tali_node_tag_2` (`tag_id` ASC) ,
-  INDEX `fk_tali_node_tag_3` (`creator_id` ASC) ,
-  CONSTRAINT `fk_tali_node_tag_1`
+  INDEX `fk_tali_node_tag_node` (`node_id` ASC) ,
+  INDEX `fk_tali_node_tag_tag` (`tag_id` ASC) ,
+  INDEX `fk_tali_node_tag_user` (`creator_id` ASC) ,
+  CONSTRAINT `fk_tali_node_tag_node`
     FOREIGN KEY (`node_id` )
     REFERENCES `tali`.`tali_node` (`id` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_tali_node_tag_2`
+  CONSTRAINT `fk_tali_node_tag_tag`
     FOREIGN KEY (`tag_id` )
     REFERENCES `tali`.`tali_tag` (`id` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_tali_node_tag_3`
+  CONSTRAINT `fk_tali_node_tag_user`
     FOREIGN KEY (`creator_id` )
     REFERENCES `tali`.`tali_user` (`id` )
     ON DELETE NO ACTION
@@ -153,10 +153,10 @@ COMMIT;
 -- -----------------------------------------------------
 START TRANSACTION;
 USE `tali`;
-INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (1, '#1 - First level test node', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas sit amet tincidunt elit. Morbi diam dui, elementum quis cursus quis, molestie at odio. Sed eros tellus, consequat scelerisque adipiscing vel, vestibulum tincidunt felis. Sed sit amet erat eget diam imperdiet posuere. Proin et nibh mi. Pellentesque viverra posuere commodo. Vivamus placerat mi magna. Cras aliquet dignissim tempor. Curabitur aliquet interdum eros, eget fringilla mauris iaculis et. Aenean interdum diam ut eros gravida tristique. Aliquam orci libero, tempor quis volutpat et, pharetra adipiscing enim. Vivamus a mauris mauris, vel ultrices nibh. Donec accumsan sodales nunc. Aliquam sed ante sit amet lorem aliquet vulputate accumsan in ante. Curabitur vitae dolor et orci pulvinar tristique. Vivamus vulputate eleifend orci nec mattis. Donec convallis pharetra risus at iaculis. Mauris id libero vel lacus suscipit lacinia. ', now(), now());
-INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (2, '#2 - Child of 1', 'Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Praesent eleifend viverra ligula, eu laoreet nisl convallis tristique. Fusce varius leo eget mi rutrum id adipiscing felis malesuada. Cras sit amet massa id libero ultricies pretium. Nam pretium ipsum vel odio venenatis sit amet viverra mi cursus. Nullam id mi sed lorem accumsan aliquam. Nam ligula magna, hendrerit sed dictum sed, egestas vitae lectus. Pellentesque sit amet tellus lorem. Quisque luctus consequat enim sed euismod. Nullam pellentesque ornare lacus vitae pulvinar. Integer ullamcorper accumsan arcu a ultricies. Sed rhoncus egestas quam, id rhoncus sapien aliquet vel. Nullam semper consequat diam, a ultricies sem cursus id. Donec purus arcu, euismod quis fringilla eget, hendrerit at elit. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. ', now(), now());
-INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (3, '#3 - Child of 1 and 2', 'Sed quis quam vitae ligula venenatis viverra vitae vitae metus. Etiam dolor ipsum, scelerisque sit amet mollis vel, laoreet sed velit. Vestibulum ut sapien ut sapien facilisis lacinia. Nunc sed neque at dui scelerisque consequat ac vitae mi. Aliquam sit amet ullamcorper dolor. Integer nibh erat, cursus ut ullamcorper sed, cursus ac metus. Pellentesque suscipit suscipit eleifend. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Duis at sem sed massa posuere consequat. Sed sed neque eu lorem dignissim ullamcorper et vitae felis. Nullam convallis posuere porta. Morbi convallis semper nibh sed auctor. Maecenas vel vestibulum ipsum. Fusce elit metus, ultricies vitae posuere et, consectetur ac sapien. Pellentesque convallis, justo sed lacinia porttitor, dui velit accumsan libero, vel ornare dui tortor vitae lectus. In hac habitasse platea dictumst. Ut luctus mi sit amet ligula aliquam euismod malesuada est tristique. Phasellus quis erat nisl, et elementum ligula. Suspendisse ante augue, ullamcorper eget sollicitudin at, vulputate non lacus. Donec tempus magna ac dolor fermentum luctus. ', now(), now());
-INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (0, 'GLOBAL - invisible', NULL, now(), now());
+INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (2, '#1 - First level test node', '1', now(), now());
+INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (3, '#2 - Child of 1', '2', now(), now());
+INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (4, '#3 - Child of 1 and 2', '3', now(), now());
+INSERT INTO `tali`.`tali_node` (`id`, `headline`, `body`, `updated_at`, `created_at`) VALUES (1, 'GLOBAL - invisible', NULL, now(), now());
 
 COMMIT;
 
@@ -165,10 +165,9 @@ COMMIT;
 -- -----------------------------------------------------
 START TRANSACTION;
 USE `tali`;
-INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (1, 3, 0);
-INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (2, 3, 0);
-INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (1, 2, 4194304);
-INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (0, 1, 0);
+INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (2, 4, 2147483648);
+INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (2, 3, 3221225472);
+INSERT INTO `tali`.`tali_node_hierarchy` (`parent_id`, `child_id`, `position`) VALUES (1, 2, 2147483648);
 
 COMMIT;
 

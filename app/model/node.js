@@ -2,9 +2,9 @@
 /**
  * Module dependencies
  */
-var log = require('log')
-  , db = require('db')
-  , helpers = require('helpers')
+var log = require('../log')
+  , db = require('../db')
+  , helpers = require('../helpers')
 
 /**
  * Constant for the maximum position
@@ -36,16 +36,18 @@ exports.getLevel = function(parentId, cb) {
 }
 
 exports.getLevel._sql_getLevel = function(parentId, cb) {
-  db.query('SELECT tali_node.*, hierarchy.parent_id,'
-        +' (SELECT count(child_id) FROM tali_node_hierarchy WHERE parent_id=tali_node.id) AS childnum'
-        +' FROM tali_node'
-        +' LEFT JOIN tali_node_hierarchy hierarchy ON hierarchy.child_id=tali_node.id'
-        +' WHERE hierarchy.parent_id=?'
-        +' ORDER BY hierarchy.position'
+  db.query(''
+    +' SELECT `tali_node`.*, `hierarchy`.`parent_id`, `hierarchy`.`position`, '
+    +'   ( '
+    +'     SELECT count(child_id) '
+    +'     FROM tali_node_hierarchy'
+    +'     WHERE parent_id=tali_node.id'
+    +'   ) AS childnum'
+    +' FROM tali_node'
+    +' LEFT JOIN tali_node_hierarchy hierarchy ON hierarchy.child_id=tali_node.id'
+    +' WHERE hierarchy.parent_id=?'
   , [parentId]
-  , function(err, results) {
-      return cb(err, results)
-    }
+  , cb
   )
 }
 
@@ -175,13 +177,12 @@ exports._sql_createHierarchy = function(parentId, childId, position, cb) {
 }
 
 /**
- * Create new node
+ * Create a new node after a given node
  * @param parentId {Number} parent ID
  * @param aboveId {Number} ID of the node above the new node
- * @param userId {Number} Creator
  * @param cb {function} cb(err, nodeId, newPosition)
  */
-exports.newNode = function(parentId, aboveId, userId, cb) {
+exports.newNode = function(parentId, aboveId, cb) {
   cb = cb || function() {}
 
   if (typeof cb != 'function')
@@ -193,12 +194,9 @@ exports.newNode = function(parentId, aboveId, userId, cb) {
   if (parseInt(aboveId) != aboveId)
     return cb('AboveId must be a Number')
 
-  if (parseInt(userId) != userId)
-    return cb('UserId must be a Number')
-
   var _self = this
-  this._selectPosition(parentId, aboveId, function(err, abovePosition) {
-    _self._selectNextPosition(parentId, abovePosition, function(err, nextPosition) {
+  this._getPosition(parentId, aboveId, function(err, abovePosition) {
+    _self._getNextPosition(parentId, abovePosition, function(err, nextPosition) {
       var newPosition = Math.round(abovePosition + (nextPosition - abovePosition) / 2)
       _self.newNode._sql_createEmptyNode(function(err, info) {
         var newChildId = info.insertId
@@ -215,13 +213,121 @@ exports.newNode = function(parentId, aboveId, userId, cb) {
   })
 }
 
+/**
+ * Create a new node with a given position
+ * @param parentId {Number} Parent Id
+ * @param position {Number} Position of the new node
+ * @param cb {function} cb(err, nodeId)
+ */
+exports.newNodeByPosition = function(parentId, position, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(parentId) != parentId)
+    return cb('ParentId must be a Number')
+
+  if (parseInt(position) != position)
+    return cb('Position must be a Number')
+
+  var _self = this
+  _self.newNode._sql_createEmptyNode(function(err, info) {
+    var newChildId = info.insertId
+    _self._sql_createHierarchy(parentId, newChildId, position, function(err) {
+      if (err) {
+        log.error(err)
+        return cb('Database error')
+      } else {
+        return cb(null, newChildId)
+      }
+    })
+  })
+}
+
 exports.newNode._sql_createEmptyNode = function(cb) {
   db.query('INSERT INTO tali_node(updated_at, created_at)'
   + ' VALUES (now(), now())'
-  , function(err, info) {
-      return cb(err, info)
+  , cb)
+}
+
+/**
+ * Delete node from hierarchy
+ * @param parentId {Number} Parent Id
+ * @param childId {Number} Child Id
+ * @param cb {function} cb(err)
+ */
+exports.delete = function(parentId, childId, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  if (parseInt(parentId) != parentId)
+    return cb('ParentId must be a Number')
+
+  if (parseInt(childId) != childId)
+    return cb('ChildId must be a Number')
+
+  this.delete._sql_deleteNode(parentId, childId, function(err) {
+    if (err) {
+      log.error(err)
+      return cb('Database error')
     }
-  )
+    return cb()
+  })
+}
+
+exports.delete._sql_deleteNode = function(parentId, childId, cb) {
+  db.query('DELETE FROM tali_node_hierarchy WHERE'
+    //+ ' parent_id=? AND'
+    + ' child_id=?'
+  , [/*parentId,*/ childId]
+  , cb)
+}
+
+/**
+ * Moving one nodes whole tree to other level with given new position
+ * @param parentId {Number} Parent ID
+ * @param childId {Number} Child ID
+ * @param newParentId {Number} New parent ID
+ * @param newPosition {Number} New position
+ * @param cb {function} cb(err)
+ */
+ exports.moveWholeTree = function(childId, newParentId, newPosition, cb) {
+  cb = cb || function() {}
+
+  if (typeof cb != 'function')
+    return
+
+  /*if (parseInt(parentId) != parentId)
+    return cb('ParentId must be a Number')*/
+
+  if (parseInt(childId) != childId)
+    return cb('ChildId must be a Number')
+
+  if (parseInt(newParentId) != newParentId)
+    return cb('NewParentId must be a Number')
+
+  if (parseInt(newPosition) != newPosition)
+    return cb('NewPosition must be a Number')
+
+  this.moveWholeTree._sql_updateHierarchy(childId, newParentId, newPosition, function(err) {
+    if (err) {
+      log.error(err)
+      return cb('Database error 6562')
+    }
+    return cb()
+  })
+}
+
+this.moveWholeTree._sql_updateHierarchy = function(childId, newParentId, newPosition, cb) {
+  db.query('UPDATE tali_node_hierarchy SET'
+    + ' parent_id=?,'
+    + ' position=?'
+    + ' WHERE child_id=?'
+  , [newParentId, newPosition, childId]
+  , cb)
 }
 
 /**
@@ -233,7 +339,6 @@ exports.newNode._sql_createEmptyNode = function(cb) {
  * @param atomic {Boolean} If it's an atomic relocation, or tree-style relocation (with childs)
  * @param cb {function} cb(err, newPositions)
  */
-
 exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
   cb = cb || function() {}
 
@@ -276,17 +381,17 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
 
   var setPositionOfMovedChilds = function(nodeIds, newPositions) {
     var firstNode = nodes[0]
-    self._selectPosition(parentId, firstNode, function(err, position) {
-      self._selectabovePosition(parentId, position, function(err, abovePosition) {
+    self._getPosition(parentId, firstNode, function(err, position) {
+      self._getAbovePosition(parentId, position, function(err, abovePosition) {
         var lastNode = nodes.pop()
-        self._selectPosition(parentId, lastNode, function(err, position) {
-          self._selectNextPosition(parentId, position, function(err, nextPosition) {
+        self._getPosition(parentId, lastNode, function(err, position) {
+          self._getNextPosition(parentId, position, function(err, nextPosition) {
             var interval = (nextPosition - abovePosition) / (nodeIds.length + 1)
             console.log('nextPosition', nextPosition)
             console.log('abovePosition', abovePosition)
             console.log('interval', interval)
-            if (interval < 1) {
-              // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
+            if (interval < 10) {
+              log.error('// MUST REFRACTOR ALL POSITIONS IN THIS LEVEL', nodeIds, parentId, inverval)
             }
             var forCb = new helpers.asyncCbChecker(nodeIds.length, function(err) {
               if (err) {
@@ -317,11 +422,11 @@ exports.move = function(parentId, nodes, newParentId, aboveId, atomic, cb) {
     })
   }
 
-  this._selectPosition(newParentId, aboveId, function(err, abovePosition) {
-    self._selectNextPosition(newParentId, abovePosition, function(err, nextPosition) {
+  this._getPosition(newParentId, aboveId, function(err, abovePosition) {
+    self._getNextPosition(newParentId, abovePosition, function(err, nextPosition) {
       var interval = (nextPosition - abovePosition) / (nodes.length + 1)
-      if (interval < 1) {
-        // MUST REFRACTOR ALL POSITIONS IN THIS LEVEL
+      if (interval < 10) {
+        log.error('// MUST REFRACTOR ALL POSITIONS IN THIS LEVEL', nodeIds, parentId, inverval)
       }
       self.move._sql_updateParents(parentId, nodes, newParentId, function(err, info) {
         if (err) {
@@ -384,7 +489,7 @@ exports.move._sql_setPosition = function(parentId, childId, newPosition, cb) {
 }
 
 /**
- * Copy one or more nodes to an other position
+ * Copy one or more nodes to an other location
  * @param parentId {Number} Current parent of the copied nodes
  * @param nodes {Array} Array of node IDs
  * @param newParentId {Number} The new parent ID of the copied nodes
