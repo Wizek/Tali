@@ -1,7 +1,6 @@
 var debug = true
 
-var paths = require('../../app/paths')
-  , node = require('node')
+var node = require('../../app/model/node')
 
 exports['Node get level'] = function(test) {
   test.expect(6)
@@ -27,18 +26,15 @@ exports['Node get level'] = function(test) {
 }
 
 exports['New node creation exists'] = function(test) {
-  test.expect(5)
+  test.expect(4)
 
   test.equal(typeof node.newNode, 'function')
   test.doesNotThrow(function() {
-    node.newNode(null, 1, 1, function(err) {
+    node.newNode(null, 1, function(err) {
       test.equal(err, 'ParentId must be a Number')
     })
-    node.newNode(1, null, 1, function(err) {
+    node.newNode(1, null, function(err) {
       test.equal(err, 'AboveId must be a Number')
-    })
-    node.newNode(1, 1, null, function(err) {
-      test.equal(err, 'UserId must be a Number')
     })
   })
   test.done()
@@ -60,7 +56,7 @@ exports['New node creation on top of current nodes'] = function(test) {
     return cb(null, {insertId: 44})
   }
 
-  node.newNode(1, 0, 1, function(err, nodeId, nodePosition) {
+  node.newNode(1, 0, function(err, nodeId, nodePosition) {
     test.equal(nodeId, 59)
     test.equal(nodePosition, 200)
   })
@@ -90,7 +86,7 @@ exports['New node creation at the end of all nodes'] = function(test) {
     return cb(null, {insertId: 44})
   }
 
-  node.newNode(1, 3, 1, function(err, nodeId, nodePosition) {
+  node.newNode(1, 3, function(err, nodeId, nodePosition) {
     test.equal(nodeId, 59)
     test.equal(nodePosition, Math.round((node.MAX_POSITION + 200) / 2))
   })
@@ -120,12 +116,73 @@ exports['New node creation at normal position'] = function(test) {
     return cb(null, {insertId: 44})
   }
 
-  node.newNode(1, 2, 1, function(err, nodeId, nodePosition) {
+  node.newNode(1, 2, function(err, nodeId, nodePosition) {
     test.equal(nodeId, 59)
     test.equal(nodePosition, 300)
 
     test.done()
   })
+}
+
+exports['New node creation by position exists'] = function(test) {
+  test.equal(typeof node.newNodeByPosition, 'function')
+
+  test.doesNotThrow(function() {
+    node.newNodeByPosition(null, 1, function(err) {
+      test.equal(err, 'ParentId must be a Number')
+    })
+    node.newNodeByPosition(1, null, function(err) {
+      test.equal(err, 'Position must be a Number')
+    })
+  })
+  test.done()
+}
+
+exports['New node creation by position works'] = function(test) {
+  test.expect(1)
+
+  node.newNode._sql_createEmptyNode = function(cb) {
+    return cb(null, {insertId: 59})
+  }
+  node._sql_saveHierarchy = function(parentId, newId, newPosition, cb) {
+    return cb(null, {insertId: 44})
+  }
+
+  node.newNodeByPosition(1, 20000, function(err, nodeId) {
+    test.equal(nodeId, 59)
+
+    test.done()
+  })
+}
+
+exports['Node delete exists'] = function(test) {
+  test.expect(4)
+
+  test.equal(typeof node.delete, 'function')
+  test.doesNotThrow(function() {
+    node.delete(null, 1, function(err) {
+      test.equal(err, 'ParentId must be a Number')
+    })
+     node.delete(1, null, function(err) {
+      test.equal(err, 'ChildId must be a Number')
+    })
+  })
+
+  test.done()
+}
+
+exports['Delete node'] = function(test) {
+  test.expect(1)
+
+  node.delete._sql_deleteNode = function(parentId, childId, cb) {
+    return cb()
+  }
+
+  node.delete(1, 2, function(err) {
+    test.equal(err, null)
+  })
+
+  test.done()
 }
 
 exports['Node moving exists'] = function(test) {
@@ -340,14 +397,17 @@ exports['Moving node(s) atomic to an upper level'] = function(test) {
    *   - 5 (400)              - 9 (467)
    *   - 6 (500)              - 6 (500)
    */
-  test.expect(-1)
+  test.expect(2)
 
   node._sql_selectPosition = function(parentId, childId, cb) {
     if (parentId == 1 && childId == 5) {
       return cb(null, [{position: 400}])
     }
-    if (parentId == 3 && childId == 7) {
-      return cb(null, [{position: 300}])
+    if (parentId == 3 && childId == 8) {
+      return cb(null, [{position: 400}])
+    }
+    if (parentId == 3 && childId == 9) {
+      return cb(null, [{position: 500}])
     }
     if (parentId == 3 && childId == 10) {
       return cb(null, [{position: 600}])
@@ -358,7 +418,7 @@ exports['Moving node(s) atomic to an upper level'] = function(test) {
     if (parentId == 1 && abovePosition == 400) {
       return cb(null, [{position: 500}])
     }
-    if (parentId == 3 && abovePosition == 450) {
+    if (parentId == 3 && abovePosition == 500) {
       return cb(null, [{position: 600}])
     }
     return cb('Test error')
@@ -397,6 +457,36 @@ exports['Moving node(s) atomic to an upper level'] = function(test) {
     )
     test.done()
   })
+}
+
+exports['Moving one nodes whole tree to other level with given new position'] = function(test) {
+  test.expect(7)
+
+  test.equal(typeof node.moveWholeTree, 'function')
+  test.doesNotThrow(function() {
+    node.moveWholeTree(null, 2, 3, 122222, function(err) {
+      test.equal(err, 'ParentId must be a Number')
+    })
+    node.moveWholeTree(1, null, 3, 122222, function(err) {
+      test.equal(err, 'ChildId must be a Number')
+    })
+    node.moveWholeTree(1, 2, null, 122222, function(err) {
+      test.equal(err, 'NewParentId must be a Number')
+    })
+    node.moveWholeTree(1, 2, 3, null, function(err) {
+      test.equal(err, 'NewPosition must be a Number')
+    })
+  })
+
+  node.moveWholeTree._sql_updateHierarchy = function(parentId, childId, newParentId, newPosition, cb) {
+    return cb(null, {affectedRows: 1})
+  }
+
+  node.moveWholeTree(1, 2, 1, 122222, function(err) {
+    test.equal(err, null)
+  })
+
+  test.done()
 }
 
 exports['Node copiing'] = function(test) {

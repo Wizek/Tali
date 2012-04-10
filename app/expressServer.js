@@ -12,9 +12,9 @@ var
     // ./node_modules/  ----------  3rd party modules for Node.js
     express = require('express')
     // ./lib/  -------------------  Own libraries that may be reused 
-  , db = require('db')
-  , hlpr = require('helpers') // prototype extensions also
-  , settings = exports.settings = require('settings')
+  , db = require('./db')
+  , hlpr = require('./helpers') // prototype extensions also
+  , settings = exports.settings = require('./settings')
     // ./modules/  ---------------  Server interface modularity
       // Yet to come
 

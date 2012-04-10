@@ -1,0 +1,68 @@
+.tali-top {
+/*    *  Background of the whole app
+  \*/
+  background-color: #eee;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+}
+.tali-top #notifications {
+  position: fixed;
+  right: 0;
+}
+.tali-top #notifications .notification {
+  padding: 1px;
+  background-color: #fff;
+  border: 2px solid #bbb;
+  border-radius: 4px;
+  margin: 2px;
+}
+.tali-top > ul {
+  padding: 0;
+  margin: 15px;
+}
+.tali-top ul.hidden {
+  display: none;
+}
+.tali-top ul ul {
+  margin: 1px initial;
+}
+.tali-top ul li {
+  margin: 3px initial;
+  list-style-type: none;
+}
+.tali-top ul li .handle {
+  font-family: monospace;
+  font-size: 200%;
+  opacity: 0.2;
+  text-shadow: 0 0 8px #000;
+  margin-right: 3px;
+}
+.tali-top ul li .handle:not(.dot) {
+  display: none;
+}
+.tali-top ul li .headline {
+  border: none;
+  width: 600px;
+  height: 1.7em;
+  background-color: inherit;
+  padding: 4px;
+  resize: none;
+  border-radius: 5px;
+}
+.tali-top ul li .headline:focus {
+  outline: none;
+  -webkit-box-shadow: inset 0 1px 3px rgba(0,0,0,0.10), 0 0 8px #fff;
+}
+.tali-top ul li .focusedby {
+  height: 100%;
+  vertical-align: middle;
+  margin: auto initial;
+}
+.tali-top ul li .body {
+  display: none;
+}
+.tali-top ul li.focused.ours > .headline {
+  background: #ddd;
+}
