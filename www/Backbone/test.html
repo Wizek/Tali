@@ -7,11 +7,12 @@
 <script type="text/javascript" src="tree.js"></script>
 <script type="text/javascript" src="main4.js"></script>
 <script type="text/javascript">
+window.test = true
 // TODO: cleaner
 var socket = {
-  emit: function(_, cb) {
+  emit: function() {
     for (var i = 0; i < arguments.length; i++) {
-      if (typeof arguments == "function") {
+      if (typeof arguments[i] == "function") {
         arguments[i]()
       }
     }
@@ -366,7 +367,7 @@ tree.branch('Node Model', function(tree) {
     tree(ch.size()).is(0)
     tree.done(4)
   })
-  tree.branch('//updated_at', function(tree) {
+  tree.branch('updated_at', function(tree) {
     var n1 = new Node
     var n2 = new Node
     var n3 = new Node
@@ -389,12 +390,27 @@ tree.branch('Node Model', function(tree) {
   tree.done(0)
 })
 tree.branch('Views', function(tree) {
-  tree.branch('//Interface', function(tree) {
+  tree.branch('Interface', function(tree) {
     tree(Interface).type('function')
-    var i = new Interface
+    var i = new Interface(
+      { connect: function() {
+        return (
+          { on: function() {
+            }
+          , emit: function() {
+              // TODO: cleaner
+              for (var i = 0; i < arguments.length; i++) {
+                if (typeof arguments[i] == "function") {
+                  arguments[i]()
+                }
+              }
+            }
+        })
+      }}
+    )
     tree($(i.el).is('div.tali-top')).ok()
-    tree($(i.el).find('> ul').length).is(1)
-    tree.done(3)
+    //tree($(i.el).find('> ul').length).is(1)
+    tree.done(2)
   })
   tree.branch('//topLevel', function(tree) {
     tree($(i.el).find('> ul').length).is(1)
@@ -747,6 +763,22 @@ tree.branch('Views', function(tree) {
       tree.done(0)
     })
     tree.done(0)
+  })
+  tree.branch('collection.add() to the right place in dom', function(tree) {
+    var c = new Children
+    var n0 = new Node({position:0})
+    var n1 = new Node({position:1})
+    var n2 = new Node({position:2})
+    var n3 = new Node({position:3})
+    c.add(n1)
+    c.add(n3)
+    c.add(n2)
+    c.add(n0)
+    tree(c.view.$el.find('> li').get(0)).is(n0.view.el)
+    tree(c.view.$el.find('> li').get(1)).is(n1.view.el)
+    tree(c.view.$el.find('> li').get(2)).is(n2.view.el)
+    tree(c.view.$el.find('> li').get(3)).is(n3.view.el)
+    tree.done(4)
   })
   tree.done(0)
 })

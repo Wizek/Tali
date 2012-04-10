@@ -8,20 +8,13 @@ void function() {
       // +'<span class="line">'
         +'<span class="handle plus">+</span>'
         +'<span class="handle minus">-</span>'
-        +'<span class="handle dot">&nbsp;</span>'
+        +'<span class="handle dot">&bull;</span>'
         +'<textarea class="headline"><%= headline %></textarea>'
         +'<span class="focusedBy"></span>'
       // +'</span>'
       +'<textarea class="body"><%= body %></textarea>')
   }
 
-
-  // io.connect('/editor')
-  // console.log(io)
-  // io.on('connect', function() {
-  //   console.log('yupiiii', arguments)
-  //   io.emit('asd')
-  // })
   Backbone.sync = function() {
     console.log('Backbone.sync', arguments)
   }
@@ -75,7 +68,15 @@ void function() {
       }
     }
     , changedPosition: function() {
-      console.log('change:position', this.get('position'), this)
+      console.log('changedPosition called', arguments)
+      // debugger
+      if (typeof test === 'undefined') {
+        if (this.collection)
+        var newParentId = ((this.collection.parent) ? this.collection.parent.get('id') : 1)
+        socket.emit('move whole tree', this.get('id'), newParentId, this.get('position'), function() {
+          console.log('move whole tree cb', arguments)
+        })
+      }
     }
     , prevPos: function() {
       var pos = this.get('position')
@@ -182,15 +183,16 @@ void function() {
       }) || null
     }
     , append: function(node) {
-      console.log("this.size()", this.size())
+      // console.log("this.size()", this.size())
       if (this.size()) {
+        this.add(node)
         var last = this.max(function(v) {return v.get('position')}).get('position')
         console.log("SETTING")
         node.set({position:iAvg(last, MAX_POS)})
       } else {
+        this.add(node)
         node.set({position:iAvg(MIN_POS, MAX_POS)})
       }
-      this.add(node)
     }
     , first: function() {
       return this.min(function(v) {
@@ -279,39 +281,47 @@ void function() {
     }
   })
 
-  window.ChildrenView = Backbone.View.extend({
-    tagName: 'ul',
-    initialize: function() {
-      var self = this
-      this.collection.bind('add', function(node) {
-        $(self.collection.view.el).append(node.view.el)
-      })
-      this.render()
-    },
-    render: function() {
-      var p = this.collection.parent
-      if (p) {
-        $(this.el).addClass(p.get('expanded') ? 'visible' : 'hidden')
-        $(p.view.el).append(this.el)
+  window.ChildrenView = Backbone.View.extend(
+    { tagName: 'ul'
+    , initialize: function() {
+        this.collection.on('add', this.onAdd, this)
+        this.render()
+      }
+    , onAdd: function(node) {
+        var pNode
+        if (pNode = node.nextNode()) {
+          pNode.view.$el.before(node.view.$el)
+        } else {
+          this.collection.view.$el.append(node.view.$el)
+        }
+      }
+    , render: function() {
+        var p = this.collection.parent
+        if (p) {
+          $(this.el).addClass(p.get('expanded') ? 'visible' : 'hidden')
+          $(p.view.el).append(this.el)
+        }
       }
     }
-    // ,
-  })
+  )
   window.Interface = Backbone.View.extend({
     className: 'tali-top'
     , tagName: 'div'
-    , initialize: function () {
+    , initialize: function (io) {
+      console.log(arguments)
       window.title = 'Tali WIP'
       _.bindAll(this, 'render')
       this.render()
       var socket = window.socket = io.connect('http://localhost:3000');
       socket.on('connect', function (data) {
-        //console.info('sucessfully established a connection with the namespace')
+        console.info('sucessfully established a connection with the namespace')
         tryToConnect()
         function tryToConnect () {
+          console.log('tryToConnect')
           socket.emit('set envId', 'eg14g14g14241g1', function(err, isLoggedIn) {
+            console.log('set envId cb', arguments)
             if (err) {
-              console.log('még nem voltam belépve')
+              console.log('még nem voltam belépve', err)
               console.log('belépek')
               socket.emit('login', 'Fodi69', 'mypass', function(err, userId) {
                 if (err) {
@@ -320,51 +330,51 @@ void function() {
                   console.log('sikeres belépés', userId)
                   tryToConnect()
                 }
-              });
-            } else {
-              if (isLoggedIn) {
-                console.log('már be voltam lépve')
-                var notify = function(message) {
-                  var el = $('<div class="notification">').text(message)
-                  el.prependTo('#notifications')
-                  setTimeout(function() {
-                    el.remove()
-                  }, 5000)
-                }
-              socket.on('user joined', function(username, userId) {
-                notify(username + ' csatlakozott.')
               })
-              socket.on('user left', function(username, userId) {
-                notify(username + ' szétkapcsolt.')
-              })
-              socket.on('change focus', function(nodeId, username) {
-                var c = topLevel.cache[nodeId]
-                if (!asd[username]) {
-                  asd[username] = new Focus({ours:false, username:username})
-                }
-                asd[username].at(c)
-                //f.at(c)
-                console.log(arguments)
-              })
-              socket.on('change headline', function(nodeId, newHeadline, username) {
-                topLevel.cache[nodeId].set('headline', newHeadline)
-              })
-              socket.on('disconnect', function() {
-                notify('Szétkapcsoltál')
-                })
-                socket.emit('get children of', 1, function(err, results) {
-                  console.log('get children of cb')
-                  for (var i in results) {
-                    var n = new Node(results[i])
-                    if (i == 0) {
-                      focus.at(n)
-                    }
-                    // n.isNew = false
-                    topLevel.add(n)
-                  }
-                  //console.log('bóó', arguments)
-                })
+            } else if (isLoggedIn) {
+              console.log('már be voltam lépve')
+              var notify = function(message) {
+                var el = $('<div class="notification">').text(message)
+                el.prependTo('#notifications')
+                setTimeout(function() {
+                  el.remove()
+                }, 5000)
               }
+            socket.on('user joined', function(username, userId) {
+              notify(username + ' csatlakozott.')
+            })
+            socket.on('user left', function(username, userId) {
+              notify(username + ' szétkapcsolt.')
+            })
+            socket.on('change focus', function(nodeId, username) {
+              var c = topLevel.cache[nodeId]
+              if (!asd[username]) {
+                asd[username] = new Focus({ours:false, username:username})
+              }
+              asd[username].at(c)
+              //f.at(c)
+              console.log(arguments)
+            })
+            socket.on('change headline', function(nodeId, newHeadline, username) {
+              topLevel.cache[nodeId].set('headline', newHeadline)
+            })
+            socket.on('disconnect', function() {
+              notify('Szétkapcsoltál')
+              })
+              socket.emit('get children of', 1, function(err, results) {
+                console.log('get children of cb')
+                for (var i in results) {
+                  var n = new Node(results[i])
+                  if (i == 0) {
+                    focus.at(n)
+                  }
+                  // n.isNew = false
+                  topLevel.add(n)
+                }
+                //console.log('bóó', arguments)
+              })
+            } else {
+              console.error("WTF?", argumetns)
             }
           })
         }
@@ -434,7 +444,8 @@ void function() {
       var t = this.at
       var n = new Node
       t().after(n)
-      var parentId = t().collection.parent? t().collection.parent.get('id') : 1
+      var coll = t().collection || {}
+      var parentId = coll.parent? coll.parent.get('id') : 1
       socket.emit('new node by position', parentId
         , n.get('position'), function(err, nodeId, nodePosition) {
         console.log('new node by position cb', arguments)
@@ -442,17 +453,23 @@ void function() {
         // if (!err) {
         //   n.isNew = false
         // }
-        t(n)
+        t(t().nextNode()) // TODO more optimized: `t(n)`, but fails tests
       })
     },
     deleteNodeAndFocusPrevious: function() {
       var t = this.at()
-      var prevHead = t.prevNode().get('headline')
-      var ourHead = t.get('headline')
-      t.prevNode().set({headline: prevHead+ourHead})
-      this.at(t.prevNode())
-      t.delete()
-      return prevHead.length
+      if (t.prevNode()) {
+        var prevHead = t.prevNode().get('headline')
+        var ourHead = t.get('headline')
+        t.prevNode().set({headline: prevHead+ourHead})
+        this.at(t.prevNode())
+        t.delete()
+        return prevHead.length
+      } else {
+        // TODO
+        //this.moveOut()
+        //t.delete()ű
+      }
     },
     deleteNodeAndFocusNext: function() {},
     expandCurrentLevel: function() {
@@ -511,14 +528,14 @@ void function() {
       shortcut.add('enter', m.addNodeAfterAndFocusIt.bind(m))
 
       shortcut.add('backspace', function() {
-        // console.log('Duty calls!', arguments)
         var _ref
         _ref = m.at().view.$el.find('> .headline').get(0)
-        console.log()
         // If the cursore is at the beginning
         if (_ref.selectionStart == 0 && _ref.selectionEnd == 0) {
-          socket.emit('delete node refs by id', m.at().get('id'), function() {
-            console.log('delete node refs by id cb', arguments)
+          // TODO DON'T REQUIRE PARENT ID
+          // TODO Move into destroy event binding.
+          socket.emit('delete node', 0, m.at().get('id'), function() {
+            console.log('delete node cb', arguments)
           })
           var at = m.deleteNodeAndFocusPrevious.apply(m)
           m.at().view.$el.find('> .headline').get(0).setSelectionRange(at, at)
