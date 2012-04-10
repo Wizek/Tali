@@ -203,7 +203,7 @@ io.sockets.on('connection', function (socket) {
   afterAuth['delete node'] = function(parentId, childId, cb) {
     socket.get('username', function(err, username) {
       node.delete(parentId, childId, function(err) {
-        socket.broadcast.emit('delete node', parentId, nodeId, username)
+        socket.broadcast.emit('delete node', parentId, childId, username)
         return cb(err)
       })
     })
@@ -217,15 +217,15 @@ io.sockets.on('connection', function (socket) {
    * @param newPosition {Number} New position
    * @param cb {function} cb(err)
    */
-  afterAuth['move whole tree'] = function(parentId, childId, newParentId, newPosition, cb) {
-    socket.get('username', function(err, username)) {
-      node.moveWholeTree(parentId, childId, newParentId, newPosition, function(err) {
-        socket.broadcast.emit('move whole tree', parentId, childId, newParentId, newPosition, username)
+  afterAuth['move whole tree'] = function(childId, newParentId, newPosition, cb) {
+    socket.get('username', function(err, username) {
+      node.moveWholeTree(childId, newParentId, newPosition, function(err) {
+        socket.broadcast.emit('move whole tree', childId, newParentId, newPosition, username)
         return cb(err)
       })
-    }
+    })
   }
-  
+
   /**
    * Locks a node for editing
    * @param nodeId {Number}

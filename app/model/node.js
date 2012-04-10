@@ -280,9 +280,9 @@ exports.delete = function(parentId, childId, cb) {
 
 exports.delete._sql_deleteNode = function(parentId, childId, cb) {
   db.query('DELETE FROM tali_node_hierarchy WHERE'
-    + ' parent_id=? AND'
+    //+ ' parent_id=? AND'
     + ' child_id=?'
-  , [parentId, childId]
+  , [/*parentId,*/ childId]
   , cb)
 }
 
@@ -294,14 +294,14 @@ exports.delete._sql_deleteNode = function(parentId, childId, cb) {
  * @param newPosition {Number} New position
  * @param cb {function} cb(err)
  */
- exports.moveWholeTree = function(parentId, childId, newParentId, newPosition, cb) {
+ exports.moveWholeTree = function(childId, newParentId, newPosition, cb) {
   cb = cb || function() {}
 
   if (typeof cb != 'function')
     return
 
-  if (parseInt(parentId) != parentId)
-    return cb('ParentId must be a Number')
+  /*if (parseInt(parentId) != parentId)
+    return cb('ParentId must be a Number')*/
 
   if (parseInt(childId) != childId)
     return cb('ChildId must be a Number')
@@ -312,7 +312,7 @@ exports.delete._sql_deleteNode = function(parentId, childId, cb) {
   if (parseInt(newPosition) != newPosition)
     return cb('NewPosition must be a Number')
 
-  this.moveWholeTree._sql_updateHierarchy(parentId, childId, newParentId, newPosition, function(err) {
+  this.moveWholeTree._sql_updateHierarchy(childId, newParentId, newPosition, function(err) {
     if (err) {
       log.error(err)
       return cb('Database error 6562')
@@ -321,13 +321,12 @@ exports.delete._sql_deleteNode = function(parentId, childId, cb) {
   })
 }
 
-this.moveWholeTree._sql_updateHierarchy = function(parentId, childId, newParentId, newPosition, cb) {
+this.moveWholeTree._sql_updateHierarchy = function(childId, newParentId, newPosition, cb) {
   db.query('UPDATE tali_node_hierarchy SET'
     + ' parent_id=?,'
     + ' position=?'
-    + ' WHERE parent_id=?'
-    + ' AND child_id=?'
-  , [newParentId, newPosition, parentId, childId]
+    + ' WHERE child_id=?'
+  , [newParentId, newPosition, childId]
   , cb)
 }
 
