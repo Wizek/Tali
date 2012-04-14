@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <script type="text/javascript">
+      load('jquery', '1.6')
+      // Basic loader script
+      function load(what, ver) {
+        var path = '/scripts/'+what+'.js?v='+ver
+          , snippet = '<scr'+'ipt type="text/javascript" src="'+path+'"><'+'/script>'
+        document.write(snippet)
+      }
+    </script>
+    <style type="text/css" media="screen">
+      html{ padding:50px }
+      #errField
+        { color:red
+        /*; position:absolute
+        ; left:350px */
+        ; font-weight:900
+        }
+    </style>
+    <script type="text/javascript">
+      $(init)
+      function init () {
+        /*\
+         *  Initialisation
+        \*/
+        window.onhashchange = hashChange
+        hashChange()
+
+        $.ajaxSetup(
+          { url: "/interact"
+          , type:'POST'
+          , contentType:'application/json'
+          , dataType:'json'
+          , processData: function(data) {return JSON.stringify(data)}
+          //, success: function(v) {console.log('XHR Success:', v)}
+          //, error: function(v) {console.error('XHR Error:', v)}
+        })
+        $('#submit').click(function() {
+          var obj = {}
+
+          // populate obj with the data of inputs
+          $('form#login input[type!=submit]').each(function(i, elem) {
+            obj[elem.id] = elem.value
+          })
+
+          var ajax = $.ajax({
+              url: "/interact/register"
+            , data: obj
+          })
+          ajax.success(function(r) {
+            if (r.ok) {
+              error(false)
+              
+            }else if (r.err){
+              console.log(r.err)
+              error(r.err)
+            }else{
+              error('Ismeretlen hiba. Részletek:<br>'
+                + JSON.stringify(r))
+            }
+          })
+          ajax.error(function(r) { error(JSON.stringify(r)) })
+          return false
+        })
+      }
+
+      function hashChange () {
+        /*\
+         *  Dealing with ajax navigation
+        \*/
+        var hash = window.location.hash.replace('#', '')
+        if (/^[\da-f]{64}$/.test(hash)) {
+          error('')
+          
+        }else{
+          error('A meghívód nem megfelelő formázású')
+        }
+        $('#invite_token').val(hash)
+      }
+
+      function error (str) {
+        if (str) {
+          $('#errField').show().html(str)
+        }else{
+          $('#errField').hide()
+        }
+      }
+    </script>
+    <title>
+      Under Development
+    </title>
+  </head>
+  <body>
+
+    <form id="login" onsubmit="false">
+      <span id="errField"></span>
+      <table>
+        <tr>
+          <th colspan="2">Meghívás</th>
+        </tr>
+        <tr>
+          <td><label for="invite_token">Meghívó kód</label></td>
+          <td><input  id="invite_token"></td>
+        </tr>
+        <tr>
+          <th colspan="2">Személyes információk</th>
+        </tr>
+        <tr>
+          <td><label for="full_name">Teljes Név</label></td>
+          <td><input  id="full_name"></td>
+        </tr>
+        <tr>
+          <td><label for="nick">Becenév</label></td>
+          <td><input  id="nick"></td>
+        </tr>
+        <tr>
+          <td><label for="login_name">Bejelentkezési név</label></td>
+          <td><input  id="login_name"></td>
+        </tr>
+        <tr>
+          <td><label for="email">Email cím</label></td>
+          <td><input  id="email"></td>
+        </tr>
+        <tr>
+          <td><label for="pass1">Jelszó</label></td>
+          <td><input  id="pass1"></td>
+        </tr>
+        <tr>
+          <td><label for="pass2">Jelszó megint</label></td>
+          <td><input  id="pass2"></td>
+        </tr>
+        <tr>
+          <th colspan="2"><button id="submit" type="submit">Küldés</button></th>
+        </tr>
+      </table>
+    </form>
+
+  </body>
+</html>

@@ -49,7 +49,7 @@
           $('#loginNow').removeAttr('disabled')
           if (err) {
             alert(err)
-          }else{
+          } else {
             loggedIn()
           }
         })
@@ -64,7 +64,8 @@
     }
     function loggedIn () {
       $('form#loginBox').hide()
-      socket.of('/editor')
+      window.location = '/Backbone'
+      /*socket.of('/editor')
         .on('connect_failed', function(reason) {
           console.error('unable to connect to namespace', reason)
         })
@@ -73,9 +74,9 @@
         })
         .on('error', function() {
           console.log('BAZMEG, connect_failed kellett volna hogy legyen.')
-        })
+        })*/
     }
-    
+
     function getEnvID (argument) {
       var eID = $.cookie('eID')
       var first = false
