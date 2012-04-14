@@ -6,11 +6,11 @@ void function() {
   var tplStr = {
     node: _.template(''
       // +'<span class="line">'
-        +'<span class="handle plus">+</span>'
-        +'<span class="handle minus">-</span>'
-        +'<span class="handle dot">&bull;</span>'
-        +'<textarea class="headline"><%= headline %></textarea>'
-        +'<span class="focusedBy"></span>'
+      +'<span class="handle plus">+</span>'
+      +'<span class="handle minus">-</span>'
+      +'<span class="handle dot">&middot;</span>' // ∙•
+      +'<textarea class="headline"><%= headline %></textarea>'
+      +'<span class="focusedBy"></span>'
       // +'</span>'
       +'<textarea class="body"><%= body %></textarea>')
   }
@@ -70,6 +70,9 @@ void function() {
     , changedPosition: function() {
       console.log('changedPosition called', arguments)
       // debugger
+      // TODO remove this ugly hack which doesn't scale!!
+      // $('li:has(> ul:empty)').removeClass('expanded collapsed')
+      //   .addClass('no-children')
       if (typeof test === 'undefined') {
         if (this.collection)
         var newParentId = ((this.collection.parent) ? this.collection.parent.get('id') : 1)
@@ -217,7 +220,8 @@ void function() {
       this.model.bind('change:focus', this.changeViewFocus, this)
       this.model.bind('destroy', this.destroy, this)
       this.render()
-      $(this.el).find('> .headline').mousedown(this.changeModelFocus.bind(this))
+      this.$el.find('> .headline').mousedown(this.changeModelFocus.bind(this))
+      this.$el.find('> .handle').mousedown(this.toggleCurrentLevel.bind(this))
     }
     , events: {
       'change .headline': 'changeModelHead',
@@ -228,11 +232,17 @@ void function() {
       'blur .body': 'changeModelBody',
       //'click .plus': 'changeModelFocus',
     }
+    , toggleCurrentLevel: function() {
+      console.log('I was here')
+      this.model.set({expanded: !this.model.get('expanded')})
+    }
     , changeViewExpanded: function() {
       var e = this.model.get('expanded')
       var t = this.model.get('children').view.$el
       t.removeClass(e?'hidden':'visible')
       t.addClass(e?'visible':'hidden')
+      this.$el.removeClass(e?'collapsed':'expanded')
+      this.$el.addClass(e?'expanded':'collapsed')
     }
     , changeViewPosition: function() {
       var coll = this.model.collection
@@ -275,6 +285,8 @@ void function() {
     }
     , render: function() {
       this.$el.html(tplStr.node(this.model.toJSON()))
+        //.addClass(this.model.get('expanded')? 'expanded' : 'collapsed')
+        .addClass('no-children')
     }
     , destroy: function() {
       this.$el.remove()
@@ -285,8 +297,20 @@ void function() {
     { tagName: 'ul'
     , initialize: function() {
         this.collection.on('add', this.onAdd, this)
+        this.collection.on('remove', this.onRemove, this)
         this.render()
       }
+    , onRemove: function() {
+      // debugger
+      var p
+      if (p = this.collection.parent) {
+        if (p.childCount() == 0) {
+          p.view.$el
+            .removeClass('expanded collapsed')
+            .addClass('no-children')
+        }
+      }
+    }
     , onAdd: function(node) {
         var pNode
         if (pNode = node.nextNode()) {
@@ -294,12 +318,19 @@ void function() {
         } else {
           this.collection.view.$el.append(node.view.$el)
         }
+        var p
+        if (p = this.collection.parent) {
+          p.view.$el
+            .removeClass('no-children')
+            .addClass(p.get('expanded')? 'expanded' : 'collapsed')
+        }
+        // debugger
       }
     , render: function() {
         var p = this.collection.parent
         if (p) {
-          $(this.el).addClass(p.get('expanded') ? 'visible' : 'hidden')
-          $(p.view.el).append(this.el)
+          this.$el.addClass('no-children'/*p.get('expanded') ? 'visible' : 'hidden'*/)
+          p.view.$el.append(this.el)
         }
       }
     }
@@ -326,6 +357,7 @@ void function() {
               socket.emit('login', 'Fodi69', 'mypass', function(err, userId) {
                 if (err) {
                   console.error(err)
+                  window.location = '/'
                 } else {
                   console.log('sikeres belépés', userId)
                   tryToConnect()
@@ -340,26 +372,26 @@ void function() {
                   el.remove()
                 }, 5000)
               }
-            socket.on('user joined', function(username, userId) {
-              notify(username + ' csatlakozott.')
-            })
-            socket.on('user left', function(username, userId) {
-              notify(username + ' szétkapcsolt.')
-            })
-            socket.on('change focus', function(nodeId, username) {
-              var c = topLevel.cache[nodeId]
-              if (!asd[username]) {
-                asd[username] = new Focus({ours:false, username:username})
-              }
-              asd[username].at(c)
-              //f.at(c)
-              console.log(arguments)
-            })
-            socket.on('change headline', function(nodeId, newHeadline, username) {
-              topLevel.cache[nodeId].set('headline', newHeadline)
-            })
-            socket.on('disconnect', function() {
-              notify('Szétkapcsoltál')
+              socket.on('user joined', function(username, userId) {
+                notify(username + ' csatlakozott.')
+              })
+              socket.on('user left', function(username, userId) {
+                notify(username + ' szétkapcsolt.')
+              })
+              socket.on('change focus', function(nodeId, username) {
+                var c = topLevel.cache[nodeId]
+                if (!asd[username]) {
+                  asd[username] = new Focus({ours:false, username:username})
+                }
+                asd[username].at(c)
+                //f.at(c)
+                console.log(arguments)
+              })
+              socket.on('change headline', function(nodeId, newHeadline, username) {
+                topLevel.cache[nodeId].set('headline', newHeadline)
+              })
+              socket.on('disconnect', function() {
+                notify('Szétkapcsoltál')
               })
               socket.emit('get children of', 1, function(err, results) {
                 console.log('get children of cb')
@@ -371,7 +403,6 @@ void function() {
                   // n.isNew = false
                   topLevel.add(n)
                 }
-                //console.log('bóó', arguments)
               })
             } else {
               console.error("WTF?", argumetns)

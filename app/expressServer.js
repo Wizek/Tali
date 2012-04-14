@@ -11,7 +11,7 @@ var
   //, Crypto = require('crypto') // removed dependency Crypto
     // ./node_modules/  ----------  3rd party modules for Node.js
     express = require('express')
-    // ./lib/  -------------------  Own libraries that may be reused 
+    // ./lib/  -------------------  Own libraries that may be reused
   , db = require('./db')
   , hlpr = require('./helpers') // prototype extensions also
   , settings = exports.settings = require('./settings')
@@ -36,18 +36,18 @@ app.configure(function() {
 // config to be run in dev enviroment
 // Fejlesztői környezetbéli beállítások
 app.configure('development', function() {
-  app.use(express.errorHandler({ dumpExceptions: true, showStack: true })); 
+  app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
   PORT = settings.ports.development
 })
 // production enviroment configuration
 // Produkciós környezetbéli beállítások
 app.configure('dev2', function() {
-  app.use(express.errorHandler({ dumpExceptions: true, showStack: true })); 
+  app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
   PORT = settings.ports.secondary_development
 })
 
 app.configure('production', function() {
-  app.use(express.errorHandler()); 
+  app.use(express.errorHandler());
   PORT = settings.ports.production
 })
 
@@ -57,8 +57,8 @@ function nothingFound (req, res, next) {
   // TODO: Send it with 404 HTTP error status code!!
   if (req.accepts('json')) {
     res.send({error: "Not found"}, 404)
-  }else{
-    res.doSendInstead('/404.html')
+  } else {
+    return res.redirect('/404.html')
   }
 }
 
