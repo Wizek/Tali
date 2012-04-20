@@ -1,0 +1,49 @@
+!!! 5
+html(lang="hu")
+  head
+    - var title = (typeof title != 'undefined')? title : 'Unnamed'
+    title= title
+    != stylesheet_link_tag('bootstrap', 'style', 'bootstrap-responsive')
+    != javascript_include_tag('http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js', 'bootstrap', 'rails', 'application')
+    != csrf_meta_tag()
+  body
+    .navbar
+      .navbar-inner
+        .container
+          a(href='/').brand
+            |  Tali
+          if isLoggedIn
+            user = request.session.user
+            .nav-collapse.collapse
+              .pull-right
+                a.btn.btn-inverse(href=path_to.logout())
+                  i.icon-eject.icon-white
+                  |  Kilépek
+                ul.nav
+                  li
+                    a(href=path_to.user(user.id))
+                      i.icon-user.icon-white
+                      = ' '+user.username
+          else
+            a(href='/signup').pull-right.btn.btn-success Beiratkozok!
+            - form_for(new User, {action:path_to.login, method:'post', class:'navbar-form pull-right login'}, function(f) {
+              != f.input('username', {type:'text',placeholder:'Becenév', class:'input-small'})
+              != f.input('password', {type:'password',placeholder:'Jelszó', class:'input-small'})
+              != f.submit('Belépek', {class:'btn'})
+            - })
+    .container
+      - var flash = request.flash()
+      - flash && console.log('Flash:', flash)
+      each val, key in flash
+        each msg in val
+          .alert(class='alert-'+key)
+            a.close(data-dismiss="alert") ×
+            #{t('flash.'+key)}: #{msg}
+      //- pre= JSON.stringify(request.session.user,0,1)
+      != body
+
+      .row
+      hr
+      footer
+        p Copyleft 2012
+                //- li!= link_to('Kilépés', path_to.session(), {method: 'delete', remote: true, jsonp: '(function (u) {location.href = u;})'})

@@ -1,18 +1,23 @@
-{
-  "author": "Wizek <123.wizek@gmail.com>",
-  "name": "Tali",
-  "version": "0.0.1",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/Wizek/Tali.git"
+{ "name": "blog"
+, "version": "0.0.1"
+, "engines": ["node >= 0.4.0"]
+, "main": "server.js"
+, "dependencies":
+  { "ejs":              "*"
+  , "ejs-ext":          "*"
+  , "express":          ">= 2.5.8"
+  , "railway":          ">= 0.1.6"
+  , "jugglingdb":       ">= 0.1.0"
+  , "coffee-script":    ">= 1.1.1"
+  , "stylus":           "*"
+  , "socket.io":        "*"
+  , "connect":          "*"
   },
-  "engines": {
-    "node": "~v0.4.10"
-  },
-  "dependencies": {
-    "should": "~0.2.1",
-    "doc.md": "0.0.3",
-    "dox": "0.0.5"
-  },
-  "devDependencies": {}
+  "devDependencies":
+  { "nodeunit":         "*"
+  , "sinon":            "*"
+  }
+, "scripts":
+  { "test": "nodeunit test/*/*"
+  }
 }

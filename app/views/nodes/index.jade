@@ -1,0 +1,15 @@
+.page-header
+  h1 Index of nodes
+
+- nodes.forEach(function (node) {
+  .row
+    .span-two-thirds= 'node #' + node.id
+    .span-one-third
+      != link_to('Edit', path_to.edit_node(node), {class: 'btn primary'}) + ' '
+      != link_to('Delete', path_to.node(node), {class: 'btn danger', method: 'delete', remote: true, jsonp: '(function (u) {location.href = u;})'})
+- });
+
+hr
+
+.well
+  != link_to('New node', path_to.new_node(), {class: 'btn'})

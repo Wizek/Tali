@@ -1,0 +1,63 @@
+//- pre.row= asd('can\'t be blank') //JSON.stringify(user.errors)
+
+mixin field(name, property, form, user)
+  - var error = user.errors?user.errors[property]?user.errors[property] :[]:[]
+  - var cls = error.length?'error' :user[property]?'success' :''
+  .control-group(class=cls)
+    != form.label(property, name, {class:'control-label'})
+    .controls
+      != form.input(property, {type:property})
+      i.icon-info-sign(id='po_user_#{property}')(style='margin:3px;opacity:0.65')
+      script
+        $('i#po_user_#{property}')
+          .popover(
+            { title:'#{name}'
+            , content:'#{t("form.popover.signup."+property)}'
+            }
+          )
+      if error[0]
+        .help-inline= capitaliseFirstLetter(localize(error[0]))
+
+- form_for(user, {action:path_to.users(), method:'post', class:'span7 form-horizontal'}, function(f) {
+  legend Regisztráció
+
+  mixin field('Titkos kód', 'secret_code', f, user)
+  mixin field('Felhasználónév', 'username', f, user)
+  mixin field('Email cím', 'email', f, user)
+  mixin field('Jelszó', 'password', f, user)
+
+  .form-actions
+    != f.submit('Küldés', {class:'btn btn-primary'})
+- })
+
+
+//- fieldset.control-group(class=e.username?'error':'')
+  != f.label('username', 'Felhasználónév')
+  != f.input('username', {placeholder:'Felhasználónév'})
+
+
+//- form.span4
+  legend.row Regisztráció
+  input.row(type="text", placeholder="Titkos kód")
+  p
+  input.row(type="text", placeholder="Felhasználónév")
+  input.row(type="text", placeholder="Email cím")
+  p
+  input.row(type="text", placeholder="Jelszó")
+  .row
+  button.row.btn(type="submit")
+   | Küldés
+
+//- form.form-vertical
+  label Felhasználónév
+    input(type="text")
+  label Biztonsági kód
+    input(type="text")
+  label Jelszó
+    input(type="password")
+  label Email
+    input(type="email")
+  label.checkbox
+    | Elolvastam és elfogadom a felhasználói feltételeket.
+    input(type="checkbox")
+  button(type="submit").btn Submit

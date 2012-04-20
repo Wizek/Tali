@@ -1,0 +1,10 @@
+.page-header
+  h1 Edit node
+
+- form_for(node, {action: path_to.node(node), method: 'PUT', id: "node_form"}, function (form) {
+  != partial('nodes/form.jade', {locals: {form: form, node: node}})
+  .actions
+    != form.submit('Update node', {class: 'btn primary'})
+    span= ' or '
+    != link_to('Cancel', path_to.node(node), {class: 'btn'})
+- });

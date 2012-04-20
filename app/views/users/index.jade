@@ -1,0 +1,26 @@
+.page-header
+  h1 Index of user
+
+.row
+  .span12
+    p!= link_to('<i class="icon-plus icon-white"></i> New user', path_to.new_user(), {class: 'btn btn-primary'})
+
+.row
+  .span12
+    if (users.length > 0)
+      table.table.table-striped
+        thead
+          tr
+            th Username
+            th Actions
+        tbody
+          each user in users
+            tr
+              td
+                strong!= link_to(user.username, path_to.user(user))
+              td
+                != link_to('<i class="icon-edit"></i> Edit', path_to.edit_user(user), {class: 'btn btn-mini'})
+                != ' '+link_to('<i class="icon-remove icon-white"></i> Delete', path_to.user(user), {class: 'btn btn-mini btn-danger', method: 'delete', remote: true, jsonp: '(function (u) {location.href = u;})'})
+    else
+      p.alert.alert-block.alert-info
+        strong No users were found.

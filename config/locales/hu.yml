@@ -1,0 +1,12 @@
+hu:
+  flash:
+    info: 'infó'
+    warning: 'figyelmeztetés'
+    error: 'hiba'
+    success: 'siker'
+  validation:
+    cant-be-blank: 'kötelező kitölteni'
+    is-blank: 'üres'
+    is-not-unique: 'nem egyedi'
+    is-invalid: 'nem megfelelő'
+    too-short: 'túl rövid'

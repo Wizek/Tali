@@ -1,0 +1,28 @@
+
+mixin field(name, property, form, user)
+  - var error = user.errors?user.errors[property]?user.errors[property] :[]:[]
+  - var cls = error.length?'error' :user[property]?'success' :''
+  .control-group(class=cls)
+    != form.label(property, name, {class:'control-label'})
+    .controls
+      != form.input(property, {type:property})
+      //- i.icon-info-sign(id='po_user_#{property}')(style='margin:3px;opacity:0.65')
+      //- script
+      //-   $('i#po_user_#{property}')
+      //-     .popover(
+      //-       { title:'#{name}'
+      //-       , content:'#{t("form.popover.login."+property)}'
+      //-       }
+      //-     )
+      if error[0]
+        .help-inline= capitaliseFirstLetter(localize(error[0]))
+
+- form_for(user, {action:path_to.login(), method:'put', class:'span7 form-horizontal'}, function(f) {
+  legend Bejelentkezés
+
+  mixin field('Felhasználónév', 'username', f, user)
+  mixin field('Jelszó', 'password', f, user)
+
+  .form-actions
+    != f.submit('Küldés', {class:'btn btn-primary'})
+- })

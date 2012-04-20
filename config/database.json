@@ -1,0 +1,13 @@
+{ "development":
+  { "driver":   "mysql"
+  , "host":     "localhost"
+  , "port":     3306
+  , "database": "railway"
+  , "prefix": "asd_"
+  , "username": "root"
+  , "password": "75jfqXfwhCQAuHY2"
+  }
+, "test":
+  { "driver":   "memory"
+  }
+}

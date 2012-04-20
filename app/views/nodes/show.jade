@@ -1,0 +1,14 @@
+.page-header
+  h1 Details of node
+
+div(about=path_to.node(node))
+  .field(property='headline')= node.headline
+  .field(property='body')= node.body
+  .field(property='createdAt')= node.createdAt
+  .field(property='updatedAt')= node.updatedAt
+
+.actions
+  != link_to('Edit', path_to.edit_node(node), {class: 'btn primary'}) + ' '
+  != link_to('Delete', path_to.node(node), {class: 'btn danger', method: 'delete', remote: true, jsonp: '(function (u) { location.href = u; })'})
+  span= ' or '
+  != link_to('Back to index', path_to.nodes())

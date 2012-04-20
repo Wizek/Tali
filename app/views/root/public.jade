@@ -1,0 +1,9 @@
+h1 public
+//- pre= isLoggedIn
+!= link_to('Delete', 'test', {method: 'delete', remote: true, jsonp: '(function (u) { console.log(u) })'})
+script(src='socket.io/socket.io.js')
+script
+  var socket = io.connect()
+  socket.on('connect', function(data) {
+    console.log('hello', data)
+  })

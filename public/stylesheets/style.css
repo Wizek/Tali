@@ -1,0 +1,16 @@
+.login {
+  margin: 0 10px;
+}
+.login * {
+  opacity: 0.85;
+}
+.login label {
+  color: #fff;
+}
+.login * {
+  margin: 0 3px;
+}
+.login:hover,
+.login *:focus {
+  opacity: 1;
+}

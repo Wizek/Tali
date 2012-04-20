@@ -1,0 +1,26 @@
+.page-header
+  h1 session#index
+
+//- .sessions
+  table
+    each val in usersessions
+      tr
+        each tmp, key in val
+          th= key
+    each val in usersessions
+      tr
+        each session_val in val
+          td= JSON.stringify(session_val)
+pre= JSON.stringify(request.cookies,0,2)
+//- .sessions
+  mixin draw(vall)
+    ul
+      each val, key in vall
+        if typeof val != 'object'
+          li #{key}: #{val}
+        else
+          li
+            | #{key}:
+            mixin draw(val)
+  mixin draw(usersessions)
+pre= JSON.stringify(usersessions,0,2)

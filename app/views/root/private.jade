@@ -1,0 +1,9 @@
+script(type="text/javascript", src="/socket.io/socket.io.js")
+!= javascript_include_tag('jquery','shortcut','underscore-min','backbone','main4')
+!= stylesheet_link_tag('normalize', 'app')
+body
+  script(type="text/javascript")
+    var interface = new Interface(io)
+    $('body').append(interface.el)
+    $(interface.el).append(topLevel.view.el)
+
