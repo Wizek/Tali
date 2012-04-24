@@ -32,7 +32,15 @@ app.configure(function(){
 })
 
 
-app.onListen = function() {
+// var _temp = app._events.listening
+// app._events.listening = function() {
+//   if (typeof _temp == 'function') {
+//     _temp()
+//   }
+//   console.log('ar', arguments)
+// }
+
+app.on('listening', function() {
   app.sio = require('socket.io').listen(app)
 
   app.sio.configure(function() {
@@ -75,5 +83,6 @@ app.onListen = function() {
     }
 
   })
-}
+})
+
 
